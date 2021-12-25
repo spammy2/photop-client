@@ -1,3 +1,4 @@
+import { decode } from "html-entities";
 import { Client } from "./client";
 import { DocumentObject } from "./documentobject";
 import { BaseObject } from "./object";
@@ -17,7 +18,7 @@ export class Chat implements BaseObject {
 		this.raw = raw;
 		this.createdAt = new Date(raw.Timestamp);
 		this.id = raw._id;
-		this.text = raw.Text;
+		this.text = decode(raw.Text);
 	}
 
 	reply(text: string){
@@ -27,7 +28,7 @@ export class Chat implements BaseObject {
 	constructor(public client: Client, public user: User, public post: Post, public raw: RawChat, replyTo?: Chat) {
 		this.createdAt = new Date(raw.Timestamp);
 		this.id = raw._id;
-		this.text = raw.Text;
+		this.text = decode(raw.Text);
 		this.replyTo = replyTo;
 	}
 }

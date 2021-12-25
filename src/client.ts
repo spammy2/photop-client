@@ -187,7 +187,7 @@ export class Client {
 	// i'm honestly confused but i dont care anymore
 	fingerprint: string = "25010157537369604664110537365900144030";
 
-	async post(text: string, medias: Blob[] = [], configuration: [] = []) {
+	async post(text: string, medias: any[] = [], configuration: [] = []) {
 		const body: any = {
 			Text: text,
 			Configuration: configuration,
@@ -229,7 +229,7 @@ export class Client {
 	}
 
 	/** debug purposes only. not practical */
-	getPostFromCache(id: string) {
+	getPostFromCache(id: string): Post | undefined {
 		return this._posts[id];
 	}
 
@@ -250,6 +250,11 @@ export class Client {
 	 */
 	onError(callback: (message: string) => void) {
 		this._errorListeners.push(callback);
+	}
+	private logError(msg: string){
+		this._errorListeners.forEach(callback=>{
+			callback(msg);
+		})
 	}
 
 	private readonly _readyListeners: Array<() => void> = [];
@@ -274,6 +279,9 @@ export class Client {
 			this._chat(first.text, first.postid, first.replyid).then(chat=>{
 				first.res(chat);
 				setTimeout(this.next.bind(this), this.chatDelay)
+			}).catch(()=>{
+				this.logError("Throttled maybe?")
+				setTimeout(this.next.bind(this), this.chatDelay)
 			})
 		} else {
 			this._isProcessing = false;
@@ -281,23 +289,25 @@ export class Client {
 	}
 
 	private async _chat(text: string, postid: string, replyid?: string): Promise<Chat> {
-		const response = await this._message<{
-			Message: string;
-			NewChatID: string;
-		}>("CreateChat", {
-			PostID: postid,
-			...(replyid? {ReplyID: replyid}: {}),
-			Text: text,
-		});
+		if (text==="") { throw new Error("Can't send empty messages") }
+		 
+			const response = await this._message<{
+				Message: string;
+				NewChatID: string;
+			}>("CreateChat", {
+				PostID: postid,
+				...(replyid? {ReplyID: replyid}: {}),
+				Text: text,
+			});
 
-		return new Chat(this, this.user!, this._posts[postid], {
-			Text: text,
-			_id: response.Body.NewChatID,
-			UserID: this.user!.id,
-			ReplyID: replyid,
-			PostID: postid,
-			Timestamp: 0, // the response for CreateChat does not include the timestamp, so we must wait for NewChatReceive in order to
-		});
+			return new Chat(this, this.user!, this._posts[postid], {
+				Text: text,
+				_id: response.Body.NewChatID,
+				UserID: this.user!.id,
+				ReplyID: replyid,
+				PostID: postid,
+				Timestamp: 0, // the response for CreateChat does not include the timestamp, so we must wait for NewChatReceive in order to
+			});
 	}
 
 	async reply(postid: string, replyid: string, text: string){
@@ -352,6 +362,22 @@ export class Client {
 		await this._message("LikePost", { PostID: postid });
 	}
 
+	async unlikePost(postid: string) {
+		await this._message("UnlikePost", { PostID: postid });
+	}
+
+	async deletePost(postid: string){
+		await this._message("UpdatePost", { Task: "Delete", PostID: postid})
+	}
+
+	async pinPost(postid: string){
+		await this._message("UpdatePost", { Task: "PinProfile", PostID: postid})
+	}
+
+	async unpinPost(postid: string){
+		await this._message("UpdatePost", { Task: "UnpinProfile", PostID: postid})
+	}
+
 	/**
 	 * Sign out.
 	 */
@@ -371,7 +397,7 @@ export class Client {
 	 */
 	constructor(credentials?: Credentials, configuration?: Configuration) {
 		this.logSocketMessages = configuration?.logSocketMessages || false;
-		this.chatDelay = configuration?.chatDelay || 1000;
+		this.chatDelay = configuration?.chatDelay || 2000;
 		this._socket = new WebSocket(SOCKET_URL);
 		this._socket.onmessage = (rawMessage) => {
 			if (rawMessage.data === "pong") return;
@@ -475,7 +501,9 @@ type ReqTask =
 	| "GetProfile"
 	| "UpdateAccountData"
 	| "LikePost"
-	| "CreatePost";
+	| "CreatePost"
+	| "UnlikePost"
+	| "UpdatePost"
 
 // Lmao robot_engine spelled 'receive' wrong and made it error
 type ClientFunction = "DisplayNewPostMessage" | "NewChatRecieve";

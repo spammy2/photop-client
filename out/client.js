@@ -197,6 +197,11 @@ class Client {
     onError(callback) {
         this._errorListeners.push(callback);
     }
+    logError(msg) {
+        this._errorListeners.forEach(callback => {
+            callback(msg);
+        });
+    }
     _readyListeners = [];
     onReady(callback) {
         this._readyListeners.push(callback);
@@ -214,6 +219,8 @@ class Client {
             this._chat(first.text, first.postid, first.replyid).then(chat => {
                 first.res(chat);
                 setTimeout(this.next.bind(this), this.chatDelay);
+            }).catch(() => {
+                this.logError("Throttled maybe?");
             });
         }
         else {
@@ -221,6 +228,9 @@ class Client {
         }
     }
     async _chat(text, postid, replyid) {
+        if (text === "") {
+            throw new Error("Can't send empty messages");
+        }
         const response = await this._message("CreateChat", {
             PostID: postid,
             ...(replyid ? { ReplyID: replyid } : {}),
@@ -278,6 +288,18 @@ class Client {
     async likePost(postid) {
         await this._message("LikePost", { PostID: postid });
     }
+    async unlikePost(postid) {
+        await this._message("UnlikePost", { PostID: postid });
+    }
+    async deletePost(postid) {
+        await this._message("UpdatePost", { Task: "Delete", PostID: postid });
+    }
+    async pinPost(postid) {
+        await this._message("UpdatePost", { Task: "PinProfile", PostID: postid });
+    }
+    async unpinPost(postid) {
+        await this._message("UpdatePost", { Task: "UnpinProfile", PostID: postid });
+    }
     /**
      * Sign out.
      */
@@ -294,7 +316,7 @@ class Client {
      */
     constructor(credentials, configuration) {
         this.logSocketMessages = configuration?.logSocketMessages || false;
-        this.chatDelay = configuration?.chatDelay || 1000;
+        this.chatDelay = configuration?.chatDelay || 2000;
         this._socket = new ws_1.default(SOCKET_URL);
         this._socket.onmessage = (rawMessage) => {
             if (rawMessage.data === "pong")

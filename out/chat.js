@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Chat = void 0;
+const html_entities_1 = require("html-entities");
 class Chat {
     client;
     user;
@@ -17,7 +18,7 @@ class Chat {
         this.raw = raw;
         this.createdAt = new Date(raw.Timestamp);
         this.id = raw._id;
-        this.text = raw.Text;
+        this.text = (0, html_entities_1.decode)(raw.Text);
     }
     reply(text) {
         this.client.reply(this.post.id, this.id, text);
@@ -29,7 +30,7 @@ class Chat {
         this.raw = raw;
         this.createdAt = new Date(raw.Timestamp);
         this.id = raw._id;
-        this.text = raw.Text;
+        this.text = (0, html_entities_1.decode)(raw.Text);
         this.replyTo = replyTo;
     }
 }

@@ -10,19 +10,41 @@ function handleCommand(chat, command) {
     if (args) {
         const cmd = args[1];
         const body = args[2];
-        if (chat.user.id === "6160e942979ff73857562a19") {
-            chat.post.chat(`Hello ${chat.user.username}, you have been blocked from accessing SockBot because you are not very cool like me.`);
-            return;
-        }
+        // if (chat.user.id==="6160e942979ff73857562a19") {
+        // 	chat.post.chat(`Hello ${chat.user.username}, you have been blocked from accessing SockBot because you are not very cool like me.`)
+        // 	return;
+        // }
         switch (cmd) {
+            case "like":
+                chat.post.like();
+                break;
+            case "unlike":
+                chat.post.unlike();
+                break;
             case "ping":
                 chat.reply(`Pong`);
                 break;
+            case "post":
+                client.post(body);
+                break;
+            case "delete":
+                client.getPostFromCache(body)?.delete();
+                break;
             case "echo":
-                chat.post.chat(body);
+                if (body === "") {
+                    chat.reply("Cannot send an empty message");
+                }
+                else {
+                    chat.post.chat(body);
+                }
                 break;
             case "reply":
-                chat.reply(body);
+                if (body === "") {
+                    chat.reply("Cannot send an empty message");
+                }
+                else {
+                    chat.reply(body);
+                }
                 break;
             case "disconnect":
                 if (chat.user.roles.indexOf("Owner") > 0 || chat.user.roles.indexOf("Developer") > 0 || chat.user.id === "61b4520e4ea86c6fe9800c3b") {
@@ -33,9 +55,16 @@ function handleCommand(chat, command) {
                     chat.reply("You must have the role of Owner or Developer or be the bot developer to disconnect");
                 }
                 break;
-            case "help":
-                chat.reply("ping; echo; help; reply; (perms required) disconnect");
+            case "eval":
+                if (chat.user.id === "61b4520e4ea86c6fe9800c3b") {
+                    chat.reply(new String(eval(body)).toString());
+                }
                 break;
+            case "help":
+                chat.reply("ping; echo; help; like; unlike; reply; (perms required) disconnect");
+                break;
+            default:
+                chat.reply(`Unrecognized Command "${command}"`);
         }
     }
     else {

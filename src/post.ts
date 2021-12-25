@@ -1,3 +1,4 @@
+import { decode } from "html-entities";
 import { User } from ".";
 import { Chat } from "./chat";
 import { Client } from "./client";
@@ -33,8 +34,39 @@ export class Post {
 		this.client.disconnectChat(this.id);
 	}
 
+	async like(){
+		return this.client.likePost(this.id);		
+	}
+
+	async unlike(){
+		return this.client.unlikePost(this.id);
+	}
+
 	async chat(text: string): Promise<Chat> {
 		return this.client.chat(this.id, text)
+	}
+
+	/**
+	 * Deletes a post.
+	 * Warning: you can only delete your only posts.
+	 * This will error if it isn't your post.
+	 */
+	async delete() {
+		return this.client.deletePost(this.id);
+	}
+
+	/**
+	 * Pins a post. Can only pin your own.
+	 */
+	async pin(){
+		return this.client.pinPost(this.id);
+	}	
+
+	/**
+	 * Pins a post. Can only unpin your own.
+	 */
+	async unpin(){
+		return this.client.unpinPost(this.id);
 	}
 
 	/**
@@ -42,7 +74,7 @@ export class Post {
 	 */
 	constructor(public client: Client, public raw: RawPost, public author: User) {
 		this.createdAt = new Date(this.raw.Timestamp);
-		this.text = raw.Text;
+		this.text = decode(raw.Text);
 		this.chatCount = raw.Chats || 0;
 		this.likes = raw.Likes || 0;
 		this.chats = [];
