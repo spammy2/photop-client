@@ -56,12 +56,14 @@ function handleCommand(chat: Chat, command: string){
 				}
 				break;
 			case "eval":
+				/*
 				if (chat.user.id==="61b4520e4ea86c6fe9800c3b") {
 					chat.reply(new String(eval(body)).toString())
 				}
+				*/
 				break;
 			case "help":
-				chat.reply("ping; echo; help; like; unlike; reply; (perms required) disconnect")
+				chat.reply("ping; echo; help; like; unlike; post; reply; (perms required) disconnect")
 				break;
 			default:
 				chat.reply(`Unrecognized Command "${command}"`);

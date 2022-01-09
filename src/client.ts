@@ -187,6 +187,9 @@ export class Client {
 	// i'm honestly confused but i dont care anymore
 	fingerprint: string = "25010157537369604664110537365900144030";
 
+	/**
+	 * Create a post with text. Images do not seem to work at the present.
+	 */
 	async post(text: string, medias: any[] = [], configuration: [] = []) {
 		const body: any = {
 			Text: text,
@@ -228,7 +231,9 @@ export class Client {
 		return this._posts[response.Body.NewPostID]
 	}
 
-	/** debug purposes only. not practical */
+	/** debug purposes only. not practical. Retrieves a {Post} from id if the post is cached.
+	 * Posts should only be obtained by Client.onPost
+	 */
 	getPostFromCache(id: string): Post | undefined {
 		return this._posts[id];
 	}
@@ -258,6 +263,9 @@ export class Client {
 	}
 
 	private readonly _readyListeners: Array<() => void> = [];
+	/**
+	 * Subscribe to when the client is ready to listen to posts.
+	 */
 	onReady(callback: () => void) {
 		this._readyListeners.push(callback);
 	}
@@ -268,10 +276,14 @@ export class Client {
 		}>("GetAccountData");
 	}
 
+	/**
+	 * Represents the current user.
+	 */
 	user?: ClientUser;
 
 	private _chatQueue: {postid: string, replyid?: string, text: string, res: (chat: Chat)=>void, rej: (msg: string)=>void}[] = [];
 	private _isProcessing = false;
+	
 	private next(){
 		const first = this._chatQueue.shift()
 		if (first) {
@@ -310,6 +322,10 @@ export class Client {
 			});
 	}
 
+	/**
+	 * @internal
+	 * Use Post.reply()
+	 */
 	async reply(postid: string, replyid: string, text: string){
 		return new Promise<Chat>((res, rej)=>{
 			this._chatQueue.push({postid, replyid, text, res, rej});
@@ -319,6 +335,10 @@ export class Client {
 		})
 	}
 
+	/**
+	 * @internal
+	 * Use Post.chat()
+	 */
 	async chat(postid: string, text: string){
 		return new Promise<Chat>((res, rej)=>{
 			this._chatQueue.push({postid, text, res, rej});
@@ -329,6 +349,11 @@ export class Client {
 	}
 
 	private _connectedChats: string[] = [];
+
+	/**
+	 * @internal
+	 * Use Post.connect()
+	 */
 	async connectChat(postid: string) {
 		this._connectedChats.push(postid);
 		// no idea why they are separate but not something we care about
@@ -341,10 +366,18 @@ export class Client {
 		this._processUsers(response.Body.Users)
 		this._processChats(response.Body.Chats);
 	}
+
+	/**
+	 * @internal
+	 * Use Post.disconnect()
+	 */
 	async disconnectChat(postid: string){
 		this._connectedChats = this._connectedChats.filter(id=>id!==postid)
 	}
 
+	/**
+	 * Can switch user by passing a username and password. May not work.
+	 */
 	async authenticate(username: string, password: string) {
 		const response = await this._message<SignInAccountData>(
 			"SignInAccount",
@@ -358,22 +391,42 @@ export class Client {
 		this.user = new ClientUser(this, response.Body);
 	}
 
+	/**
+	 * @internal
+	 * Use Post.like()
+	 */
 	async likePost(postid: string) {
 		await this._message("LikePost", { PostID: postid });
 	}
 
+	/**
+	 * @internal
+	 * Use Post.unlike()
+	 */
 	async unlikePost(postid: string) {
 		await this._message("UnlikePost", { PostID: postid });
 	}
 
+	/**
+	 * @internal
+	 * Use Post.delete()
+	 */
 	async deletePost(postid: string){
 		await this._message("UpdatePost", { Task: "Delete", PostID: postid})
 	}
 
+	/**
+	 * @internal
+	 * Use Post.pin()
+	 */
 	async pinPost(postid: string){
 		await this._message("UpdatePost", { Task: "PinProfile", PostID: postid})
 	}
 
+	/**
+	 * @internal
+	 * Use Post.unpin()
+	 */
 	async unpinPost(postid: string){
 		await this._message("UpdatePost", { Task: "UnpinProfile", PostID: postid})
 	}
@@ -392,8 +445,8 @@ export class Client {
 	}
 
 	/**
-	 *
-	 * @param authtoken
+	 * Create a client with one of two types of credentials.
+	 * {username, password} or {userid, authtoken} or none at all (this will mean you are signed out)
 	 */
 	constructor(credentials?: Credentials, configuration?: Configuration) {
 		this.logSocketMessages = configuration?.logSocketMessages || false;
@@ -504,6 +557,8 @@ type ReqTask =
 	| "CreatePost"
 	| "UnlikePost"
 	| "UpdatePost"
+	| "FollowUser"
+	| "UnfollowUser"
 
 // Lmao robot_engine spelled 'receive' wrong and made it error
 type ClientFunction = "DisplayNewPostMessage" | "NewChatRecieve";

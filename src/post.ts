@@ -16,6 +16,10 @@ export class Post {
 	private _connected = false;
 
 	_chatListeners: Array<(chat: Chat)=>void> = []
+
+	/**
+	 * Subscribe to when a chat is made. Use `Post.connect()` before subscribing.
+	 */
 	async onChat(callback: (chat: Chat)=>void) {
 		if (!this._connected) {
 			console.warn("You need to call Post.connect() before adding listeners.")
@@ -24,24 +28,39 @@ export class Post {
 		this._chatListeners.push(callback);
 	}
 
+	/**
+	 * Start listening to chats from this post
+	 */
 	async connect(){
 		this._connected = true;
 		this.client.connectChat(this.id);
 	}
 
+	/**
+	 * Stop listening to chats from this post
+	 */
 	async disconnect(){
 		this._connected = false;
 		this.client.disconnectChat(this.id);
 	}
 
+	/**
+	 * Likes a post. The like count will not be updated.
+	 */
 	async like(){
 		return this.client.likePost(this.id);		
 	}
 
+	/**
+	 * Unlikes a post. The like count will not be updated.
+	 */
 	async unlike(){
 		return this.client.unlikePost(this.id);
 	}
 
+	/**
+	 * Creates a chat on the target post. 
+	 */
 	async chat(text: string): Promise<Chat> {
 		return this.client.chat(this.id, text)
 	}
