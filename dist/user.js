@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientUser = exports.User = void 0;
 class User {
-    client;
+    _network;
     createdAt;
     id;
     avatarUrl;
@@ -20,6 +20,12 @@ class User {
     getChats() {
         throw new Error("Not Implemented");
     }
+    async follow() {
+        this._network.message("FollowUser", { FollowUserID: this.id });
+    }
+    async unfollow() {
+        this._network.message("UnfollowUser", { UnfollowUserID: this.id });
+    }
     /**
      * @private Used for updating the details when they update ex: username after the initial creation
      */
@@ -29,8 +35,8 @@ class User {
         this.username = raw.User;
         this.roles = raw.Role || [];
     }
-    constructor(client, /* public */ raw) {
-        this.client = client;
+    constructor(_network, /* public */ raw) {
+        this._network = _network;
         this.createdAt = new Date(raw.CreationTime);
         this.id = raw._id;
         this.avatarUrl = raw.Settings?.ProfilePic;

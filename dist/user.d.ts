@@ -3,7 +3,7 @@ import { Post } from "./post";
 import { Network } from "./network";
 import { BaseObject, DocumentObject } from "./types";
 export declare class User implements BaseObject {
-    client: Network;
+    private _network;
     createdAt: Date;
     id: string;
     avatarUrl?: string;
@@ -17,11 +17,13 @@ export declare class User implements BaseObject {
      * Gets a user's chat history
      */
     getChats(): Promise<Chat[]>;
+    follow(): Promise<void>;
+    unfollow(): Promise<void>;
     /**
      * @private Used for updating the details when they update ex: username after the initial creation
      */
     update(raw: RawUser): void;
-    constructor(client: Network, /* public */ raw: RawUser);
+    constructor(_network: Network, /* public */ raw: RawUser);
 }
 export declare class ClientUser extends User {
     raw: AccountData | SignInAccountData;
@@ -44,6 +46,10 @@ export interface AccountData extends RawUser {
     LastLogin: number;
     Logins: number;
     ProfileData: {
+        Visibility: "Private";
+    } | {
+        Visibility: "Public";
+        Description: string;
         Following: number;
         Followers: number;
     };

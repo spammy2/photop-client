@@ -1,5 +1,6 @@
 import { Post } from "./post";
 import { ClientConfiguration, ClientCredentials } from "./types";
+import { User } from "./user";
 /**
  * Represents a Photop client
  * Provides an interface of interactions that can be done by the user.
@@ -18,6 +19,7 @@ export declare class Client {
      * Gets a post. If it does not exist in cache, attempts to get it by using timestamp of the objectid.
      */
     getPost(id: string): Promise<Post | undefined>;
+    getUser(id: string): Promise<User | undefined>;
     /**
      * Handle posts here
      * @example
