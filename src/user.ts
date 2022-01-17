@@ -1,8 +1,8 @@
 import { Client } from "./index";
 import { Chat } from "./chat";
-import { DocumentObject } from "./documentobject";
-import { BaseObject } from "./object";
 import { Post } from "./post";
+import { Network } from "./network";
+import { BaseObject, DocumentObject } from "./types";
 
 export class User implements BaseObject {
 	createdAt: Date;
@@ -35,7 +35,7 @@ export class User implements BaseObject {
 		this.roles = raw.Role || [];
 	}
 
-	constructor(public client: Client, /* public */ raw: RawUser){
+	constructor(public client: Network, /* public */ raw: RawUser){
 		this.createdAt = new Date(raw.CreationTime);
 		this.id = raw._id;
 		this.avatarUrl = raw.Settings?.ProfilePic;
@@ -47,9 +47,9 @@ export class User implements BaseObject {
 export class ClientUser extends User {
 	email: string;
 
-	constructor(client: Client, public raw: AccountData | SignInAccountData){
+	constructor(network: Network, public raw: AccountData | SignInAccountData){
 		
-		super(client, {
+		super(network, {
 			Settings: raw.Settings,
 			CreationTime: 0,
 			Role: raw.Role,

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Chat = void 0;
 const html_entities_1 = require("html-entities");
 class Chat {
-    client;
+    _network;
     user;
     post;
     raw;
@@ -21,10 +21,10 @@ class Chat {
         this.text = (0, html_entities_1.decode)(raw.Text);
     }
     reply(text) {
-        this.client.reply(this.post.id, this.id, text);
+        this._network.reply(this.post.id, this.id, text);
     }
-    constructor(client, user, post, raw, replyTo) {
-        this.client = client;
+    constructor(_network, user, post, raw, replyTo) {
+        this._network = _network;
         this.user = user;
         this.post = post;
         this.raw = raw;

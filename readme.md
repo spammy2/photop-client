@@ -43,4 +43,9 @@ client.onPost((post)=>{
 })
 ```
 
-You can take a look in `src/sockbot.ts` to see how to create a discord-ish bot.
+You can take a look in `examples/sockbot.ts` to see how to create a discord-ish bot.
+
+### Architecture
+Photop-Client abstractifies the client, users, chats, and posts into classes, defined in their respective files.
+A private network class handles everything pertaining to the network and all classes perform their actions by calling methods of it.
+The network class is has no 'dependencies' and contains no reference to the client. By doing this, a Post or Chat is separate from the Client.

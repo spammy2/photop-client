@@ -2,7 +2,8 @@ import { decode } from "html-entities";
 import { User } from ".";
 import { Chat } from "./chat";
 import { Client } from "./client";
-import { DocumentObject } from "./documentobject";
+import { Network } from "./network";
+import { DocumentObject } from "./types";
 
 export class Post {
 	createdAt: Date;
@@ -33,7 +34,7 @@ export class Post {
 	 */
 	async connect(){
 		this._connected = true;
-		this.client.connectChat(this.id);
+		this._network.connectChat(this.id);
 	}
 
 	/**
@@ -41,28 +42,28 @@ export class Post {
 	 */
 	async disconnect(){
 		this._connected = false;
-		this.client.disconnectChat(this.id);
+		this._network.disconnectChat(this.id);
 	}
 
 	/**
 	 * Likes a post. The like count will not be updated.
 	 */
 	async like(){
-		return this.client.likePost(this.id);		
+		return this._network.message("LikePost", {PostID: this.id})
 	}
 
 	/**
 	 * Unlikes a post. The like count will not be updated.
 	 */
 	async unlike(){
-		return this.client.unlikePost(this.id);
+		return this._network.message("UnlikePost", {PostID: this.id})
 	}
 
 	/**
 	 * Creates a chat on the target post. 
 	 */
 	async chat(text: string): Promise<Chat> {
-		return this.client.chat(this.id, text)
+		return this._network.chat(this.id, text);
 	}
 
 	/**
@@ -71,27 +72,27 @@ export class Post {
 	 * This will error if it isn't your post.
 	 */
 	async delete() {
-		return this.client.deletePost(this.id);
+		return this._network.message("UpdatePost", { Task: "Delete", PostID: this.id})
 	}
 
 	/**
 	 * Pins a post. Can only pin your own.
 	 */
 	async pin(){
-		return this.client.pinPost(this.id);
+		return this._network.message("UpdatePost", { Task: "PinProfile", PostID: this.id})
 	}	
 
 	/**
 	 * Pins a post. Can only unpin your own.
 	 */
 	async unpin(){
-		return this.client.unpinPost(this.id);
+		return this._network.message("UpdatePost", { Task: "UnpinProfile", PostID: this.id})
 	}
 
 	/**
 	 * @internal Do not create
 	 */
-	constructor(public client: Client, public raw: RawPost, public author: User) {
+	constructor(private _network: Network, public raw: RawPost, public author: User) {
 		this.createdAt = new Date(this.raw.Timestamp);
 		this.text = decode(raw.Text);
 		this.chatCount = raw.Chats || 0;

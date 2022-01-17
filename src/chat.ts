@@ -1,8 +1,8 @@
 import { decode } from "html-entities";
 import { Client } from "./client";
-import { DocumentObject } from "./documentobject";
-import { BaseObject } from "./object";
+import { Network } from "./network";
 import { Post } from "./post";
+import { BaseObject, DocumentObject } from "./types";
 import { User } from "./user";
 
 export class Chat implements BaseObject {
@@ -22,10 +22,10 @@ export class Chat implements BaseObject {
 	}
 
 	reply(text: string){
-		this.client.reply(this.post.id, this.id, text)
+		this._network.reply(this.post.id, this.id, text)
 	}
 
-	constructor(public client: Client, public user: User, public post: Post, public raw: RawChat, replyTo?: Chat) {
+	constructor(private _network: Network, public user: User, public post: Post, public raw: RawChat, replyTo?: Chat) {
 		this.createdAt = new Date(raw.Timestamp);
 		this.id = raw._id;
 		this.text = decode(raw.Text);

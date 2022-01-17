@@ -42,8 +42,8 @@ exports.User = User;
 class ClientUser extends User {
     raw;
     email;
-    constructor(client, raw) {
-        super(client, {
+    constructor(network, raw) {
+        super(network, {
             Settings: raw.Settings,
             CreationTime: 0,
             Role: raw.Role,

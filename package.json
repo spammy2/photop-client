@@ -2,16 +2,17 @@
   "name": "photop-client",
   "version": "1.0.0",
   "description": "",
-  "main": "out/index.js",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "node --trace-warnings --unhandled-rejections=strict out/sockbot.js"
+    "sockbot": "tsc && tsc examples/sockbot.ts && node --trace-warnings --unhandled-rejections=strict examples/sockbot.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cross-fetch": "^3.1.4",
     "form-data": "^4.0.0",
     "html-entities": "^2.3.2",
-    "node-fetch": "^2.6.6",
     "ws": "^8.4.0"
   },
   "devDependencies": {
