@@ -125,7 +125,6 @@ class Network {
         return new Promise((res, rej) => {
             this.chatQueue.push({ postid, text, res, rej });
             if (!this.isProcessing) {
-                console.log("process next");
                 this.next();
             }
         });
@@ -134,7 +133,6 @@ class Network {
     isProcessing = false;
     next() {
         const first = this.chatQueue.shift();
-        console.log("processing", first);
         if (first) {
             this.isProcessing = true;
             this._chat(first.text, first.postid, first.replyid)
@@ -155,7 +153,6 @@ class Network {
         if (text === "") {
             throw new Error("Can't send empty messages");
         }
-        console.log("_chat() called");
         const response = await this.message("CreateChat", {
             PostID: postid,
             ...(replyid ? { ReplyID: replyid } : {}),
@@ -217,7 +214,6 @@ class Network {
     }
     reqid = 0;
     message(task, body) {
-        console.log("message", task);
         return new Promise((res, rej) => {
             const message = {
                 Body: body,
@@ -263,7 +259,7 @@ class Network {
         this.socket = new ws_1.WebSocket(SOCKET_URL);
         this.simpleSocket.connect({
             project_id: "61b9724ea70f1912d5e0eb11",
-            client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5"
+            client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
         });
         this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home" }, (Data) => {
             if (config?.logSocketMessages)
@@ -291,9 +287,7 @@ class Network {
                     this.processUsers(Users);
                     this.processChats(Chats);
                     for (const rawChat of Chats) {
-                        this.posts[rawChat.PostID]._chatListeners.forEach((callback) => {
-                            callback(this.chats[rawChat._id]);
-                        });
+                        this.posts[rawChat.PostID]._onChat(this.chats[rawChat._id]);
                     }
                 }
                 else {

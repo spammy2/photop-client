@@ -9,10 +9,15 @@ export declare class Client {
     get user(): import("./user").ClientUser | undefined;
     get userid(): string | undefined;
     private _network;
-    /** debug purposes only. not practical. Retrieves a {Post} from id if the post is cached.
-     * Posts should only be obtained by Client.onPost
+    /**
+     * @deprecated
+     * Retrieves a post from cache
      */
     getPostFromCache(id: string): Post | undefined;
+    /**
+     * Gets a post. If it does not exist in cache, attempts to get it by using timestamp of the objectid.
+     */
+    getPost(id: string): Promise<Post | undefined>;
     /**
      * Handle posts here
      * @example

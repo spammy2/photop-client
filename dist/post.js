@@ -14,23 +14,33 @@ class Post {
     id;
     usersLiked = [];
     _connected = false;
-    _chatListeners = [];
+    _currentConnection = 0;
+    _onChat(chat) {
+        if (this._connected) {
+            this.onChat(chat);
+        }
+    }
     /**
      * Subscribe to when a chat is made. Use `Post.connect()` before subscribing.
      */
-    async onChat(callback) {
-        if (!this._connected) {
-            console.warn("You need to call Post.connect() before adding listeners.");
-            return;
-        }
-        this._chatListeners.push(callback);
-    }
-    /**
-     * Start listening to chats from this post
-     */
-    async connect() {
+    onChat = (chat) => { };
+    async connect(disconnectAfter, onDisconnect) {
+        let connection = this._currentConnection++;
         this._connected = true;
         this._network.connectChat(this.id);
+        if (disconnectAfter) {
+            let timer = setTimeout(() => {
+                if (this._connected && connection === this._currentConnection) {
+                    this.disconnect();
+                    if (onDisconnect)
+                        onDisconnect();
+                }
+            }, disconnectAfter);
+            return () => {
+                if (this._connected)
+                    timer.refresh();
+            };
+        }
     }
     /**
      * Stop listening to chats from this post
@@ -63,19 +73,28 @@ class Post {
      * This will error if it isn't your post.
      */
     async delete() {
-        return this._network.message("UpdatePost", { Task: "Delete", PostID: this.id });
+        return this._network.message("UpdatePost", {
+            Task: "Delete",
+            PostID: this.id,
+        });
     }
     /**
      * Pins a post. Can only pin your own.
      */
     async pin() {
-        return this._network.message("UpdatePost", { Task: "PinProfile", PostID: this.id });
+        return this._network.message("UpdatePost", {
+            Task: "PinProfile",
+            PostID: this.id,
+        });
     }
     /**
      * Pins a post. Can only unpin your own.
      */
     async unpin() {
-        return this._network.message("UpdatePost", { Task: "UnpinProfile", PostID: this.id });
+        return this._network.message("UpdatePost", {
+            Task: "UnpinProfile",
+            PostID: this.id,
+        });
     }
     /**
      * @internal Do not create

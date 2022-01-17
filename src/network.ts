@@ -15,9 +15,9 @@ import {
 	User,
 } from "./user";
 
-import {WebSocket} from "ws";
+import { WebSocket } from "ws";
 
-import SimpleSocket from "./vendor/simplesocket"
+import SimpleSocket from "./vendor/simplesocket";
 
 const SOCKET_URL = "wss://api.photop.live/Server1";
 const FINGERPRINT = "25010157537369604664110537365900144030";
@@ -213,8 +213,6 @@ export class Network {
 			throw new Error("Can't send empty messages");
 		}
 
-		console.log("_chat() called");
-
 		const response = await this.message<{
 			Message: string;
 			NewChatID: string;
@@ -298,7 +296,6 @@ export class Network {
 
 	private reqid = 0;
 	message<Body>(task: ReqTask, body?: any): Promise<SocketResponse<Body>> {
-		console.log("message", task)
 		return new Promise((res, rej) => {
 			const message = {
 				Body: body,
@@ -355,18 +352,17 @@ export class Network {
 		this.socket = new WebSocket(SOCKET_URL);
 		this.simpleSocket.connect({
 			project_id: "61b9724ea70f1912d5e0eb11",
-			client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5"
+			client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
 		});
 		this.simpleSocket.subscribeEvent<{
 			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
 		}>({ Task: "GeneralUpdate", Location: "Home" }, (Data) => {
-			if (config?.logSocketMessages)
-			console.log(Data);
+			if (config?.logSocketMessages) console.log(Data);
 			if (Data.Type === "NewPostAdded") {
 				const NewPostData = (
 					Data as unknown as {
 						NewPostData: DocumentObject & {
-							UserID: string,
+							UserID: string;
 							Timestamp: number;
 						};
 					}
@@ -407,10 +403,8 @@ export class Network {
 
 					this.processChats(Chats);
 					for (const rawChat of Chats) {
-						this.posts[rawChat.PostID]._chatListeners.forEach(
-							(callback) => {
-								callback(this.chats[rawChat._id]);
-							}
+						this.posts[rawChat.PostID]._onChat(
+							this.chats[rawChat._id]
 						);
 					}
 				} else {

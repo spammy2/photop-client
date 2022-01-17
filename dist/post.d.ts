@@ -12,23 +12,31 @@ export declare class Post {
     chatCount: number;
     chats: Chat[];
     id: string;
-    usersLiked: ({
+    usersLiked: {
         user: User;
         likedAt: Date;
         raw: DocumentObject & {
             Timestamp: number;
         };
-    })[];
+    }[];
     private _connected;
-    _chatListeners: Array<(chat: Chat) => void>;
+    private _currentConnection;
+    _onChat(chat: Chat): void;
     /**
      * Subscribe to when a chat is made. Use `Post.connect()` before subscribing.
      */
-    onChat(callback: (chat: Chat) => void): Promise<void>;
+    onChat: (chat: Chat) => void;
     /**
      * Start listening to chats from this post
      */
     connect(): Promise<void>;
+    /**
+     * Start listening to chats from this post
+     * @param disconnectAfter Specifies how long in milliseconds to wait before disconnecting.
+     * @param onDisconnect Called when disconnected automatically
+     * @returns setBack function that allows you to set the disconnect time back.
+     */
+    connect(disconnectAfter: number, onDisconnect: () => void): Promise<() => void>;
     /**
      * Stop listening to chats from this post
      */

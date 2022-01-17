@@ -40,85 +40,136 @@ exports.__esModule = true;
 var __1 = require("..");
 var dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
-var client = new __1.Client({ username: process.env.USERNAME, password: process.env.PASSWORD }, { logSocketMessages: true });
+var client = new __1.Client({ username: process.env.USERNAME, password: process.env.PASSWORD }, { logSocketMessages: false });
+var help = {
+    like: "Likes a post",
+    unlike: "Unlike a post",
+    ping: "Sends back pong.",
+    post: "Posts a message",
+    echo: "Sends a message",
+    reply: "Replies with a message",
+    disconnect: "{perms>=1} Stop listening for commands in current post.",
+    help: "Shows a list of commands or info on a specific command",
+    about: "Gives opinion on certain things."
+};
+var commands = {
+    like: {
+        func: function (chat) {
+            chat.post.like();
+        }
+    },
+    unlike: {
+        func: function (chat) {
+            chat.post.unlike();
+        }
+    },
+    ping: {
+        func: function (chat) {
+            chat.reply("Pong");
+        }
+    },
+    post: {
+        func: function (chat, body) {
+            client.post(body);
+        }
+    },
+    echo: {
+        func: function (chat, body) {
+            if (body === "") {
+                chat.reply("Cannot send an empty message. Ex: sb!echo test");
+            }
+            else {
+                chat.post.chat(body);
+            }
+        }
+    },
+    reply: {
+        func: function (chat, body) {
+            if (body === "") {
+                chat.reply("Cannot reply with an empty message. Ex: sb!reply test");
+            }
+            else {
+                chat.reply(body);
+            }
+        }
+    },
+    disconnect: {
+        func: function (chat) {
+            chat.post.disconnect();
+            chat.post.chat("SockBot disconnected. Reason: Disconnected by user.");
+        },
+        perms: 1
+    },
+    help: {
+        func: function (chat, body) {
+            if (body === "") {
+                chat.reply(Object.keys(help).join(", "));
+            }
+            else if (body in help) {
+                chat.reply(help[body]);
+            }
+        }
+    },
+    hook: {
+        func: function (chat, body) { return __awaiter(void 0, void 0, void 0, function () {
+            var post;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, client.getPost(body)];
+                    case 1:
+                        post = _a.sent();
+                        if (post) {
+                            hookPost(post);
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        }); }
+    },
+    about: {
+        func: function (chat, body) {
+            if (body.toLowerCase().match("abicambot")) {
+                chat.reply("Doesn't even work");
+            }
+            else if (body.toLowerCase().match("sockbot")) {
+                chat.reply("amazing bot");
+            }
+            else if (body.toLowerCase().match("pyx")) {
+                chat.reply("what even is that lmao");
+            }
+            else if (body.toLowerCase().match("wutbot")) {
+                chat.reply("go away");
+            }
+            else {
+                chat.reply("Doesn't seem like i recognize what that is. Try asking about abicambot");
+            }
+        }
+    }
+};
 function handleCommand(chat, command) {
-    var _a;
     var args = command.match(/([A-Za-z]+)(.*)/);
     if (args) {
-        var cmd = args[1];
+        var cmd = args[1].toLowerCase();
         var body = args[2];
-        // if (chat.user.id==="6160e942979ff73857562a19") {
-        // 	chat.post.chat(`Hello ${chat.user.username}, you have been blocked from accessing SockBot because you are not very cool like me.`)
-        // 	return;
-        // }
-        switch (cmd) {
-            case "like":
-                chat.post.like();
-                break;
-            case "unlike":
-                chat.post.unlike();
-                break;
-            case "ping":
-                chat.reply("Pong");
-                break;
-            case "post":
-                client.post(body);
-                break;
-            case "delete":
-                console.log(body);
-                (_a = client.getPostFromCache(body)) === null || _a === void 0 ? void 0 : _a["delete"]();
-                break;
-            case "echo":
-                if (body === "") {
-                    chat.reply("Cannot send an empty message");
+        var commandObj = commands[cmd];
+        if (commandObj) {
+            var perm = commandObj.perms || 0;
+            if (perm === 0) {
+                commandObj.func(chat, body);
+            }
+            else if (perm === 1) {
+                if (chat.user.roles.indexOf("Owner") > 0 ||
+                    chat.user.roles.indexOf("Developer") > 0 ||
+                    chat.user.id === "61b4520e4ea86c6fe9800c3b") {
+                    commandObj.func(chat, body);
                 }
                 else {
-                    chat.post.chat(body);
+                    chat.reply("Permission required");
                 }
-                break;
-            case "reply":
-                if (body === "") {
-                    chat.reply("Cannot send an empty message");
-                }
-                else {
-                    chat.reply(body);
-                }
-                break;
-            case "disconnect":
-                if (chat.user.roles.indexOf("Owner") > 0 || chat.user.roles.indexOf("Developer") > 0 || chat.user.id === "61b4520e4ea86c6fe9800c3b") {
-                    chat.post.disconnect();
-                    chat.reply("SockBot is no longer listening on this channel.");
-                }
-                else {
-                    chat.reply("You must have the role of Owner or Developer or be the bot developer to disconnect");
-                }
-                break;
-            case "eval":
-                /*
-                if (chat.user.id==="61b4520e4ea86c6fe9800c3b") {
-                    chat.reply(new String(eval(body)).toString())
-                }
-                */
-                break;
-            case "about":
-                if (body.toLowerCase().match("abicambot")) {
-                    chat.reply("Doesn't even work");
-                }
-                else if (body.toLowerCase().match("sockbot")) {
-                    chat.reply("amazing bot");
-                }
-                else if (body.toLowerCase().match("pyx")) {
-                    chat.reply("what even is that lmao");
-                }
-                else {
-                    chat.reply("Doesn't seem like i recognize what that is. Try asking about abicambot");
-                }
-                break;
-            case "help":
-                chat.reply("ping; echo; help; like; unlike; post; reply; (perms required) disconnect");
-                break;
-            default:
-                chat.reply("Unrecognized Command \"" + command + "\"");
+            }
+        }
+        else {
+            chat.reply("Commant not found " + cmd);
         }
     }
     else {
@@ -126,18 +177,35 @@ function handleCommand(chat, command) {
     }
 }
 function hookPost(post) {
-    console.log("trying to chatto");
-    post.connect();
-    post.chat("SockBot is listening. Run sb!help for a list of commands");
-    post.onChat(function (chat) {
-        if (chat.text.startsWith("sb!")) {
-            handleCommand(chat, chat.text.substring(3).trim());
-        }
+    return __awaiter(this, void 0, void 0, function () {
+        var setBack;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log("trying to chatto");
+                    post.chat("SockBot is listening. Run sb!help for a list of commands");
+                    return [4 /*yield*/, post.connect(20000, function () {
+                            post.chat("SockBot disconnected. Reason: Inactivity");
+                        })];
+                case 1:
+                    setBack = _a.sent();
+                    post.onChat = function (chat) {
+                        setBack();
+                        if (chat.text.startsWith("sb!")) {
+                            handleCommand(chat, chat.text.substring(3).trim());
+                        }
+                    };
+                    return [2 /*return*/];
+            }
+        });
     });
 }
 client.onPost = function (post) {
     if (post.text.match(/\+SockBot/)) {
         hookPost(post);
+    }
+    if (post.text.match(/sb\![a-zA-Z0-9]/)) {
+        post.chat("SockBot does not support running commands via posts. Append +SockBot to your post first, then run command as a chat..");
     }
 };
 client.onReady = function () { return __awaiter(void 0, void 0, void 0, function () {

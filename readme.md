@@ -29,18 +29,32 @@ const guestClient = new Client();
 ```js
 const post = client.post("Hey you people");
 ```
-> Photop Client supports images but it is not tested so no guarantees. `client.post(text, image1, image2)`
+> Photop Client does not support images at the moment.
 
 
 ### Replies to posts that contains "bot"
 ```js
-client.onPost((post)=>{
+client.onPost = (post)=>{
 	if (post) {
 		if (post.text.match(/bot/)) {
 			post.chat("Bottttt")
 		}
 	}
-})
+}
+```
+
+### Listen for chat messages in a post
+```js
+// this would be put inside client.onPost
+
+post.connect();
+post.onChat = (chat)=>{
+	if (chat.text.match(/bot/)) {
+		post.chat("Bot")
+		// you can also access post with chat.post
+		// chat.reply("Bot") If you want to reply instead of sending a message.
+	}
+}
 ```
 
 You can take a look in `examples/sockbot.ts` to see how to create a discord-ish bot.
