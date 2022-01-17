@@ -2,11 +2,12 @@
 Photop Client is a library for creating bots for Photop. It works directly with the WebSocket and abstractifies.
 
 ## How to get started
-Photop Client uses node.js. Meaning it doesn't run in the browser. You will first need to install node. (Google it up: node.js download)
-Download this folder if you haven't already.
-In your node.js program, put `const {Client} = require("path/to/this/folder")`
+Install node and create a project.
+Open terminal and change your directory to your project.
+Install photop-client like this `npm install photop-client`
+In your node.js program, put `const {Client} = require("photop-client")`
 
-Photop Client has heavy influence from discord.js. Every action through Photop happens through an object called the `Client`.
+Photop Client has heavy influence from discord.js. Creating posts and listening for posts start with the Client.
 
 You can instantiate the Photop Client in 3 ways.
 1. With username and password.
