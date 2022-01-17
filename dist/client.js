@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -12,14 +21,34 @@ const cross_fetch_1 = __importDefault(require("cross-fetch"));
  * Provides an interface of interactions that can be done by the user.
  */
 class Client {
-    chatDelay;
+    /**
+     * Create a client with one of two types of credentials.
+     * {username, password} or {userid, authtoken} or none at all (this will mean you are signed out)
+     */
+    constructor(credentials, configuration) {
+        /**
+         * Handle posts here
+         * @example
+         * client.onPost((post)=>{
+         * 	post.chat("Hello");
+         * })
+         */
+        this.onPost = (post) => { };
+        this.onReady = () => { };
+        this._network = new network_1.Network(credentials, configuration);
+        this._network.onPost = (post) => {
+            this.onPost(post);
+        };
+        this._network.onReady = () => {
+            this.onReady();
+        };
+    }
     get user() {
         return this._network.user;
     }
     get userid() {
         return this._network.userid;
     }
-    _network;
     /**
      * @deprecated
      * Retrieves a post from cache
@@ -30,78 +59,68 @@ class Client {
     /**
      * Gets a post. If it does not exist in cache, attempts to get it by using timestamp of the objectid.
      */
-    async getPost(id) {
-        if (this._network.posts[id])
+    getPost(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._network.posts[id])
+                return this._network.posts[id];
+            yield this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
+            console.log(this._network.posts);
             return this._network.posts[id];
-        await this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
-        console.log(this._network.posts);
-        return this._network.posts[id];
+        });
     }
-    async getUser(id) {
-        if (this._network.users[id])
-            return this._network.users[id];
-        const data = (await (0, cross_fetch_1.default)("https://photoprest.herokuapp.com/Users?UserId=" + id)
-            .then((e) => e.json())
-            .catch(() => {
-            console.log("fetch to photoprest resulted in error");
-        }));
-        if (data.user) {
-            return new user_1.User(this._network, data.user);
-        }
-    }
-    async getUserFromUsername(name) {
-        for (const userid in this._network.users) {
-            if (this._network.users[userid].username === name) {
-                return this._network.users[userid];
+    getUser(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._network.users[id])
+                return this._network.users[id];
+            const data = (yield (0, cross_fetch_1.default)("https://photoprest.herokuapp.com/Users?UserId=" + id)
+                .then((e) => e.json())
+                .catch(() => {
+                console.log("fetch to photoprest resulted in error");
+            }));
+            if (data.user) {
+                return new user_1.User(this._network, data.user);
             }
-        }
-        const response = await this._network.message("Search", { Type: "Users", Search: name });
-        this._network.processUsers(response.Body.Result);
-        for (const userid in this._network.users) {
-            if (this._network.users[userid].username === name) {
-                return this._network.users[userid];
-            }
-        }
+        });
     }
-    /**
-     * Handle posts here
-     * @example
-     * client.onPost((post)=>{
-     * 	post.chat("Hello");
-     * })
-     */
-    onPost = (post) => { };
-    onReady = () => { };
+    getUserFromUsername(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const userid in this._network.users) {
+                if (this._network.users[userid].username === name) {
+                    return this._network.users[userid];
+                }
+            }
+            const response = yield this._network.message("Search", { Type: "Users", Search: name });
+            this._network.processUsers(response.Body.Result);
+            for (const userid in this._network.users) {
+                if (this._network.users[userid].username === name) {
+                    return this._network.users[userid];
+                }
+            }
+        });
+    }
     /**
      * Create a post with text. Images do not seem to work at the present.
      */
-    async post(text, medias = [], configuration = []) {
-        return this._network.post(text, medias, configuration);
+    post(text, medias = [], configuration = []) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this._network.post(text, medias, configuration);
+        });
     }
     /**
      * Can switch user by passing a username and password. May not work.
      */
-    async authenticate(username, password) {
-        this._network.authenticate(username, password);
+    authenticate(username, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._network.authenticate(username, password);
+        });
     }
     /**
      * Sign out.
      */
-    async signout() {
-        this._network.signout();
-    }
-    /**
-     * Create a client with one of two types of credentials.
-     * {username, password} or {userid, authtoken} or none at all (this will mean you are signed out)
-     */
-    constructor(credentials, configuration) {
-        this._network = new network_1.Network(credentials, configuration);
-        this._network.onPost = (post) => {
-            this.onPost(post);
-        };
-        this._network.onReady = () => {
-            this.onReady();
-        };
+    signout() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._network.signout();
+        });
     }
 }
 exports.Client = Client;
