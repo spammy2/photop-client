@@ -17,6 +17,7 @@ export type ReqTask =
 | "UpdatePost"
 | "FollowUser"
 | "UnfollowUser"
+| "Search"
 
 // Lmao robot_engine spelled 'receive' wrong and made it error
 export type ClientFunction = /* "DisplayNewPostMessage" | */ "NewChatRecieve";

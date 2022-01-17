@@ -20,6 +20,7 @@ export declare class Client {
      */
     getPost(id: string): Promise<Post | undefined>;
     getUser(id: string): Promise<User | undefined>;
+    getUserFromUsername(name: string): Promise<User | undefined>;
     /**
      * Handle posts here
      * @example

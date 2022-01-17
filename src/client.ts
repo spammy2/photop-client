@@ -57,6 +57,22 @@ export class Client {
 		new User(this._network, data.user);
 	}
 
+	async getUserFromUsername(name: string): Promise<User | undefined> {
+		for (const userid in this._network.users) {
+			if (this._network.users[userid].username===name) {
+				return this._network.users[userid];
+			}
+		}
+		const response = await this._network.message<{Result: RawUser[]}>("Search");
+		this._network.processUsers(response.Body.Result);
+		
+		for (const userid in this._network.users) {
+			if (this._network.users[userid].username===name) {
+				return this._network.users[userid];
+			}
+		}
+	}
+
 	/**
 	 * Handle posts here
 	 * @example
