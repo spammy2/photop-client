@@ -1,6 +1,7 @@
 export type ReqTask =
 | "CreateConnection"
 | "GetAccountData"
+| "GetFollowData"
 | "GetPosts"
 | "ConnectLiveChat"
 | "GetLiveCount"

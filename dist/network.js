@@ -104,6 +104,7 @@ class Network {
         this.connectedChats = this.connectedChats.filter((id) => id !== postid);
     }
     processUsers(rawUsers) {
+        let processed = [];
         for (const rawUser of rawUsers) {
             if (rawUser._id in this.users) {
                 this.users[rawUser._id].update(rawUser);
@@ -111,7 +112,9 @@ class Network {
             else {
                 this.users[rawUser._id] = new user_1.User(this, rawUser);
             }
+            processed.push(this.users[rawUser._id]);
         }
+        return processed;
     }
     async reply(postid, replyid, text) {
         return new Promise((res, rej) => {

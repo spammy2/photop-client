@@ -9,6 +9,7 @@ export declare class User implements BaseObject {
     avatarUrl?: string;
     username: string;
     roles: Role[];
+    private _clientUserIsFollowing?;
     /**
      * Gets a user's post history
      */
@@ -17,8 +18,11 @@ export declare class User implements BaseObject {
      * Gets a user's chat history
      */
     getChats(): Promise<Chat[]>;
-    follow(): Promise<void>;
-    unfollow(): Promise<void>;
+    follow(): Promise<boolean>;
+    unfollow(): Promise<boolean>;
+    following: User[];
+    private _isLoadingFollowingUsers;
+    loadFollowingUsers(): Promise<void>;
     /**
      * @private Used for updating the details when they update ex: username after the initial creation
      */
@@ -28,13 +32,14 @@ export declare class User implements BaseObject {
 export declare class ClientUser extends User {
     raw: AccountData | SignInAccountData;
     email: string;
+    updateClient(raw: AccountData | SignInAccountData): void;
     constructor(network: Network, raw: AccountData | SignInAccountData);
 }
 export interface RawUser extends DocumentObject {
-    CreationTime: number;
+    CreationTime?: number;
     Role?: Role[];
     User: string;
-    Settings: RawUserSettings;
+    Settings?: RawUserSettings;
 }
 export interface RawUserSettings {
     ProfilePic?: string;
@@ -57,7 +62,7 @@ export interface AccountData extends RawUser {
 }
 /** Account data returned from SignInAccount */
 export interface SignInAccountData {
-    Role: Role[];
+    Role: Role[] | Role;
     BlockedUsers: RawUser[];
     Email: string;
     ProfileData: {
@@ -79,7 +84,7 @@ export interface RawClientUserSettings extends RawUserSettings {
         "Embed Twitch Streams": boolean;
         "Embed YouTube Videos": boolean;
         "Embed code.org Projects": boolean;
-        "Theme": "Dark Mode" | "Light Mode";
+        Theme: "Dark Mode" | "Light Mode";
     };
 }
 declare type Role = "Verified" | "Tester" | "Owner" | "Developer";

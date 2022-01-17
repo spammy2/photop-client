@@ -150,13 +150,16 @@ export class Network {
 	}
 
 	processUsers(rawUsers: RawUser[]) {
+		let processed: User[] = [];
 		for (const rawUser of rawUsers) {
 			if (rawUser._id in this.users) {
 				this.users[rawUser._id].update(rawUser);
 			} else {
 				this.users[rawUser._id] = new User(this, rawUser);
 			}
+			processed.push(this.users[rawUser._id]);
 		}
+		return processed;
 	}
 
 	async reply(postid: string, replyid: string, text: string) {

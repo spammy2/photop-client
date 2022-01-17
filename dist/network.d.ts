@@ -22,7 +22,7 @@ export declare class Network {
     getPosts(amount?: number, before?: number, initial?: boolean): Promise<Post[]>;
     connectChat(postid: string): Promise<void>;
     disconnectChat(postid: string): Promise<void>;
-    processUsers(rawUsers: RawUser[]): void;
+    processUsers(rawUsers: RawUser[]): User[];
     reply(postid: string, replyid: string, text: string): Promise<Chat>;
     chat(postid: string, text: string): Promise<Chat>;
     chatQueue: {
