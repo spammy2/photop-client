@@ -1,4 +1,3 @@
-import { Client } from "./index";
 import { Chat } from "./chat";
 import { Post } from "./post";
 import { Network } from "./network";

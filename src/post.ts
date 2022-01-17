@@ -1,7 +1,6 @@
 import { decode } from "html-entities";
 import { User } from ".";
 import { Chat } from "./chat";
-import { Client } from "./client";
 import { Network } from "./network";
 import { DocumentObject } from "./types";
 

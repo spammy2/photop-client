@@ -1,5 +1,4 @@
 import { Chat, RawChat } from "./chat";
-import { Client } from "./client";
 import { Post, RawPost } from "./post";
 import {
 	ClientConfiguration,

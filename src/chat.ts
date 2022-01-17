@@ -1,5 +1,4 @@
 import { decode } from "html-entities";
-import { Client } from "./client";
 import { Network } from "./network";
 import { Post } from "./post";
 import { BaseObject, DocumentObject } from "./types";
