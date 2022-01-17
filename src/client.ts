@@ -34,7 +34,6 @@ export class Client {
 	async getPost(id: string): Promise<Post | undefined> {
 		if (this._network.posts[id]) return this._network.posts[id];
 
-		console.log(new Date(parseInt(id.substring(0, 8), 16) * 1000 - 5000));
 		await this._network.getPosts(
 			10,
 			parseInt(id.substring(0, 8), 16) * 1000 - 5000
@@ -43,6 +42,7 @@ export class Client {
 		return this._network.posts[id];
 	}
 
+	
 	async getUser(id: string): Promise<User | undefined> {
 		if (this._network.users[id]) return this._network.users[id];
 
@@ -52,9 +52,11 @@ export class Client {
 			.then((e) => e.json())
 			.catch(() => {
 				console.log("fetch to photoprest resulted in error");
-			})) as { user: RawUser };
+			})) as { user?: RawUser };
 
-		new User(this._network, data.user);
+		if (data.user) {
+			return new User(this._network, data.user);
+		}
 	}
 
 	async getUserFromUsername(name: string): Promise<User | undefined> {
@@ -63,9 +65,9 @@ export class Client {
 				return this._network.users[userid];
 			}
 		}
-		const response = await this._network.message<{Result: RawUser[]}>("Search");
+		const response = await this._network.message<{Result: RawUser[]}>("Search", {Type:"Users", Search: name});
 		this._network.processUsers(response.Body.Result);
-		
+
 		for (const userid in this._network.users) {
 			if (this._network.users[userid].username===name) {
 				return this._network.users[userid];

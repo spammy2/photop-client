@@ -33,7 +33,6 @@ class Client {
     async getPost(id) {
         if (this._network.posts[id])
             return this._network.posts[id];
-        console.log(new Date(parseInt(id.substring(0, 8), 16) * 1000 - 5000));
         await this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
         console.log(this._network.posts);
         return this._network.posts[id];
@@ -46,7 +45,9 @@ class Client {
             .catch(() => {
             console.log("fetch to photoprest resulted in error");
         }));
-        new user_1.User(this._network, data.user);
+        if (data.user) {
+            return new user_1.User(this._network, data.user);
+        }
     }
     async getUserFromUsername(name) {
         for (const userid in this._network.users) {
@@ -54,7 +55,7 @@ class Client {
                 return this._network.users[userid];
             }
         }
-        const response = await this._network.message("Search");
+        const response = await this._network.message("Search", { Type: "Users", Search: name });
         this._network.processUsers(response.Body.Result);
         for (const userid in this._network.users) {
             if (this._network.users[userid].username === name) {

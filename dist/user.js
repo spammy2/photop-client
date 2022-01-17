@@ -37,7 +37,7 @@ class User {
     }
     constructor(_network, /* public */ raw) {
         this._network = _network;
-        this.createdAt = new Date(raw.CreationTime);
+        this.createdAt = new Date(raw.CreationTime || parseInt(raw._id.substring(0, 8), 16) * 1000);
         this.id = raw._id;
         this.avatarUrl = raw.Settings?.ProfilePic;
         this.username = raw.User;
