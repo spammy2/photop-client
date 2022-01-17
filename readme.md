@@ -17,7 +17,7 @@ You can instantiate the Photop Client in 3 ways.
 Using token is suggested because there is an extra step with the username and password.
 
 ```js
-const { Client } = require("path/to/photopclient")
+const { Client } = require("photop-client")
 
 const clientWithUsername = new Client({username: "PhotopClient", password:"123456"})
 

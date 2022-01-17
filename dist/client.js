@@ -28,7 +28,9 @@ class Client {
     async getPost(id) {
         if (this._network.posts[id])
             return this._network.posts[id];
+        console.log(new Date(parseInt(id.substring(0, 8), 16) * 1000 - 5000));
         await this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
+        console.log(this._network.posts);
         return this._network.posts[id];
     }
     /**

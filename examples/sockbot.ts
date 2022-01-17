@@ -1,3 +1,4 @@
+// moved to https://github.com/spammy2/sockbot to make use of the new npm package
 // why am i putting sockbot.ts in source? because i dont know where to put it so it just gonna go in as well
 import { Chat, Client, Post } from "..";
 import { config } from "dotenv";
@@ -168,3 +169,5 @@ client.onReady = async () => {
 	//const post = client.getPostFromCache("61c6dffae1e6417b595d63d1")
 	//hookPost(post);
 };
+
+module.exports = {client}

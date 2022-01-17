@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+// moved to https://github.com/spammy2/sockbot to make use of the new npm package
 // why am i putting sockbot.ts in source? because i dont know where to put it so it just gonna go in as well
 var __1 = require("..");
 var dotenv_1 = require("dotenv");
@@ -214,3 +215,4 @@ client.onReady = function () { return __awaiter(void 0, void 0, void 0, function
         return [2 /*return*/];
     });
 }); };
+module.exports = { client: client };

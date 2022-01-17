@@ -23,7 +23,14 @@ export class User implements BaseObject {
 	getChats(): Promise<Chat[]> {
 		throw new Error("Not Implemented")
 	}
-
+	
+	async follow() {
+		this._network.message("FollowUser", {FollowUserID: this.id});
+	}
+	async unfollow() {
+		this._network.message("UnfollowUser", {UnfollowUserID: this.id});
+	}
+	
 	/**
 	 * @private Used for updating the details when they update ex: username after the initial creation
 	 */
@@ -34,7 +41,7 @@ export class User implements BaseObject {
 		this.roles = raw.Role || [];
 	}
 
-	constructor(public client: Network, /* public */ raw: RawUser){
+	constructor(private _network: Network, /* public */ raw: RawUser){
 		this.createdAt = new Date(raw.CreationTime);
 		this.id = raw._id;
 		this.avatarUrl = raw.Settings?.ProfilePic;
@@ -76,7 +83,7 @@ export interface AccountData extends RawUser {
 	LastImportantUpdate: number;
 	LastLogin: number;
 	Logins: number;
-	ProfileData: {Following: number, Followers: number};
+	ProfileData: {Visibility: "Private"} | { Visibility: "Public", Description:string, Following: number, Followers: number};
 	Settings: RawClientUserSettings;
 }
 
