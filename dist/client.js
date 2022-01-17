@@ -1,8 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Client = void 0;
 const network_1 = require("./network");
 const user_1 = require("./user");
+const cross_fetch_1 = __importDefault(require("cross-fetch"));
 /**
  * Represents a Photop client
  * Provides an interface of interactions that can be done by the user.
@@ -37,7 +41,7 @@ class Client {
     async getUser(id) {
         if (this._network.users[id])
             return this._network.users[id];
-        const data = (await fetch("https://photoprest.herokuapp.com/Users?UserId=" + id)
+        const data = (await (0, cross_fetch_1.default)("https://photoprest.herokuapp.com/Users?UserId=" + id)
             .then((e) => e.json())
             .catch(() => {
             console.log("fetch to photoprest resulted in error");
