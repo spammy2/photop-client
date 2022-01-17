@@ -25,7 +25,7 @@ class Post {
      */
     onChat = (chat) => { };
     async connect(disconnectAfter, onDisconnect) {
-        let connection = this._currentConnection++;
+        let connection = ++this._currentConnection;
         this._connected = true;
         this._network.connectChat(this.id);
         if (disconnectAfter) {
