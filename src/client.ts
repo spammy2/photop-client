@@ -2,6 +2,7 @@ import { Post } from "./post";
 import { ClientConfiguration, ClientCredentials } from "./types";
 import { Network } from "./network";
 import { RawUser, User } from "./user";
+import fetch from "cross-fetch";
 
 /**
  * Represents a Photop client
