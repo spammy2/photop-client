@@ -6,6 +6,7 @@
   "main": "dist/index.js",
   "repository": "https://github.com/spammy2/photop-client",
   "scripts": {
+    "publish": "tsc && npm version minor && npm publish",
     "sockbot": "tsc && tsc examples/sockbot.ts && node inspect --trace-warnings --unhandled-rejections=strict examples/sockbot.js"
   },
   "author": "",

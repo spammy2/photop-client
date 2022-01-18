@@ -20,7 +20,7 @@ export declare class Group implements BaseObject {
     onUserLeft: (user: GroupUser) => void;
     onDelete: () => void;
     onReadyPromise: Promise<void>;
-    onGroupPost: (post: Post, user: GroupUser) => void;
+    onPost: (post: Post) => void;
     delete(): Promise<void>;
     /**
      * Create a post with text. Images do not seem to work at the present.

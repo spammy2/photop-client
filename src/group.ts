@@ -24,7 +24,7 @@ export class Group implements BaseObject {
 	
 	onReadyPromise: Promise<void>;
 	
-	onGroupPost = (post: Post, user: GroupUser)=>{}
+	onPost = (post: Post)=>{}
 
 	async delete(){
 		throw new Error("Not Implemented")

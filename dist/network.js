@@ -132,7 +132,8 @@ class Network {
                     this.posts[post.id] = post;
                     if (!initial) {
                         if (groupid) {
-                            this.groups[groupid].onGroupPost(post, this.groups[groupid].members[post.author.id]);
+                            console.log(post, posts);
+                            this.groups[groupid].onPost(post);
                         }
                         else {
                             this.onPost(post);

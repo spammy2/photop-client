@@ -24,7 +24,7 @@ class Group {
         this.onUserJoined = (user) => { };
         this.onUserLeft = (user) => { };
         this.onDelete = () => { };
-        this.onGroupPost = (post, user) => { };
+        this.onPost = (post) => { };
         this.id = raw._id;
         this.createdAt = new Date(raw.Timestamp);
         this.name = raw.Name;

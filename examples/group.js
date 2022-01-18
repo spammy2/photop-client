@@ -6,15 +6,20 @@ const client = new Client(
 	{ logSocketMessages: true }
 );
 
+// Kick user bot
 client.onReady=async ()=>{
-	const group = client.groups["61e66551a41bf0066a6a8abd"]
-	group.onGroupPost = (post)=>{
-		console.log(`A post was made ${post.text}`)
-	}
-	const post = await group.post("I like turtles");
-	post.connect();
-	post.onChat = (chat)=>{
-		chat.reply(chat.text)
+	const group = client.groups["61e64216a41bf0066a6a49da"];
+	group.onPost = async (post)=>{
+		if (post.text.startsWith("!kick ")) {
+			if (post.author.username !== "moderator") {
+				post.chat("You need permission to do that");
+				return;
+			}
+			const username = post.text.substring(6)
+			const user = await client.getUserFromUsername(username);
+			await group.members[user.id].kick();
+			post.chat(`Kicked ${username}`);
+		}
 	}
 }
 
