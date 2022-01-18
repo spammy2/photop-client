@@ -95,7 +95,7 @@ export class Post {
 	 * Creates a chat on the target post.
 	 */
 	async chat(text: string): Promise<Chat> {
-		return this._network.chat(this.id, text);
+		return this._network.chat(text, this.id, this.group?.id);
 	}
 
 	/**

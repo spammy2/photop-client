@@ -12,6 +12,9 @@ class Chat {
         this.id = raw._id;
         this.text = (0, html_entities_1.decode)(raw.Text);
         this.replyTo = replyTo;
+        if (raw.GroupID) {
+            this.group = this._network.groups[raw.GroupID];
+        }
     }
     /**
      * Update is for when some values are unknown at instantiation time
@@ -23,7 +26,8 @@ class Chat {
         this.text = (0, html_entities_1.decode)(raw.Text);
     }
     reply(text) {
-        this._network.reply(this.post.id, this.id, text);
+        var _a;
+        this._network.reply(text, this.post.id, this.id, (_a = this.group) === null || _a === void 0 ? void 0 : _a.id);
     }
 }
 exports.Chat = Chat;

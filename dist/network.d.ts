@@ -27,11 +27,12 @@ export declare class Network {
     connectChat(postid: string): Promise<void>;
     disconnectChat(postid: string): Promise<void>;
     processUsers(rawUsers: RawUser[]): User[];
-    reply(postid: string, replyid: string, text: string): Promise<Chat>;
-    chat(postid: string, text: string): Promise<Chat>;
+    reply(text: string, postid: string, replyid: string, groupid?: string): Promise<Chat>;
+    chat(text: string, postid: string, groupid?: string): Promise<Chat>;
     chatQueue: {
         postid: string;
         replyid?: string;
+        groupid?: string;
         text: string;
         res: (chat: Chat) => void;
         rej: (msg: string) => void;

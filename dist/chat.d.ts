@@ -1,3 +1,4 @@
+import { Group } from "./group";
 import { Network } from "./network";
 import { Post } from "./post";
 import { BaseObject, DocumentObject } from "./types";
@@ -11,6 +12,7 @@ export declare class Chat implements BaseObject {
     id: string;
     text: string;
     replyTo?: Chat;
+    group?: Group;
     /**
      * Update is for when some values are unknown at instantiation time
      */
@@ -21,6 +23,7 @@ export declare class Chat implements BaseObject {
 export interface RawChat extends DocumentObject {
     PostID: string;
     ReplyID?: string;
+    GroupID?: string;
     Text: string;
     UserID: string;
     Timestamp: number;

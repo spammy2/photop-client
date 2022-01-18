@@ -8,8 +8,10 @@ const client = new Client(
 
 // Kick user bot
 client.onReady=async ()=>{
-	const group = await client.joinGroup("ad67e659")
-	group.post("hello world")
+	
+	const group = await client.joinGroup("ad67e659");
+	const post = await group.post("hello world");
+	const chat = await post.chat("erm okays");
 	// const group = client.groups["61e64216a41bf0066a6a49da"];
 	// group.onPost = async (post)=>{
 	// 	if (post.text.startsWith("!kick ")) {

@@ -174,18 +174,18 @@ export class Network {
 		return processed;
 	}
 
-	async reply(postid: string, replyid: string, text: string) {
+	async reply(text: string, postid: string, replyid: string, groupid?: string) {
 		return new Promise<Chat>((res, rej) => {
-			this.chatQueue.push({ postid, replyid, text, res, rej });
+			this.chatQueue.push({ postid, replyid, groupid, text, res, rej });
 			if (!this.isProcessing) {
 				this.next();
 			}
 		});
 	}
 
-	async chat(postid: string, text: string) {
+	async chat(text: string, postid: string, groupid?: string) {
 		return new Promise<Chat>((res, rej) => {
-			this.chatQueue.push({ postid, text, res, rej });
+			this.chatQueue.push({ postid, text, res, rej, groupid });
 			if (!this.isProcessing) {
 				this.next();
 			}
@@ -195,6 +195,7 @@ export class Network {
 	chatQueue: {
 		postid: string;
 		replyid?: string;
+		groupid?: string;
 		text: string;
 		res: (chat: Chat) => void;
 		rej: (msg: string) => void;
@@ -205,7 +206,7 @@ export class Network {
 		const first = this.chatQueue.shift();
 		if (first) {
 			this.isProcessing = true;
-			this._chat(first.text, first.postid, first.replyid)
+			this._chat(first.text, first.postid, first.replyid, first.groupid)
 				.then((chat) => {
 					first.res(chat);
 					setTimeout(this.next.bind(this), this.chatDelay);
@@ -222,7 +223,8 @@ export class Network {
 	private async _chat(
 		text: string,
 		postid: string,
-		replyid?: string
+		replyid?: string,
+		groupid?: string,
 	): Promise<Chat> {
 		if (text === "") {
 			throw new Error("Can't send empty messages");
@@ -232,14 +234,16 @@ export class Network {
 			Message: string;
 			NewChatID: string;
 		}>("CreateChat", {
+			GroupID: groupid,
 			PostID: postid,
-			...(replyid ? { ReplyID: replyid } : {}),
+			ReplyID: replyid,
 			Text: text,
 		});
 
 		return new Chat(this, this.user!, this.posts[postid], {
 			Text: text,
 			_id: response.Body.NewChatID,
+			GroupID: groupid,
 			UserID: this.userid!,
 			ReplyID: replyid,
 			PostID: postid,

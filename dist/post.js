@@ -90,8 +90,9 @@ class Post {
      * Creates a chat on the target post.
      */
     chat(text) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            return this._network.chat(this.id, text);
+            return this._network.chat(text, this.id, (_a = this.group) === null || _a === void 0 ? void 0 : _a.id);
         });
     }
     /**

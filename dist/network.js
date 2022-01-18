@@ -186,20 +186,20 @@ class Network {
         }
         return processed;
     }
-    reply(postid, replyid, text) {
+    reply(text, postid, replyid, groupid) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((res, rej) => {
-                this.chatQueue.push({ postid, replyid, text, res, rej });
+                this.chatQueue.push({ postid, replyid, groupid, text, res, rej });
                 if (!this.isProcessing) {
                     this.next();
                 }
             });
         });
     }
-    chat(postid, text) {
+    chat(text, postid, groupid) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((res, rej) => {
-                this.chatQueue.push({ postid, text, res, rej });
+                this.chatQueue.push({ postid, text, res, rej, groupid });
                 if (!this.isProcessing) {
                     this.next();
                 }
@@ -210,7 +210,7 @@ class Network {
         const first = this.chatQueue.shift();
         if (first) {
             this.isProcessing = true;
-            this._chat(first.text, first.postid, first.replyid)
+            this._chat(first.text, first.postid, first.replyid, first.groupid)
                 .then((chat) => {
                 first.res(chat);
                 setTimeout(this.next.bind(this), this.chatDelay);
@@ -224,15 +224,21 @@ class Network {
             this.isProcessing = false;
         }
     }
-    _chat(text, postid, replyid) {
+    _chat(text, postid, replyid, groupid) {
         return __awaiter(this, void 0, void 0, function* () {
             if (text === "") {
                 throw new Error("Can't send empty messages");
             }
-            const response = yield this.message("CreateChat", Object.assign(Object.assign({ PostID: postid }, (replyid ? { ReplyID: replyid } : {})), { Text: text }));
+            const response = yield this.message("CreateChat", {
+                GroupID: groupid,
+                PostID: postid,
+                ReplyID: replyid,
+                Text: text,
+            });
             return new chat_1.Chat(this, this.user, this.posts[postid], {
                 Text: text,
                 _id: response.Body.NewChatID,
+                GroupID: groupid,
                 UserID: this.userid,
                 ReplyID: replyid,
                 PostID: postid,
