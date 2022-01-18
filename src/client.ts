@@ -59,10 +59,6 @@ export class Client {
 		const rawGroup = (await this._network.message<{Group: RawGroup}>("GetGroups", {GroupID: id})).Body.Group;
 		return this._network.groups[rawGroup._id] = new Group(this._network, rawGroup);
 	}
-
-	async leaveGroup(groupid: string){
-		await this._network.message("LeaveGroup", groupid);
-	}
 	
 	async getUser(id: string): Promise<User | undefined> {
 		if (this._network.users[id]) return this._network.users[id];

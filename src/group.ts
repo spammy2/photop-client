@@ -26,6 +26,10 @@ export class Group implements BaseObject {
 	
 	onPost = (post: Post)=>{}
 
+	async leave(){
+		await this._network.message("LeaveGroup", this.id);
+	}
+
 	async delete(){
 		throw new Error("Not Implemented")
 	}

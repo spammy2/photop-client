@@ -1,12 +1,11 @@
 {
   "name": "photop-client",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "",
   "types": "dist/index.d.ts",
   "main": "dist/index.js",
   "repository": "https://github.com/spammy2/photop-client",
   "scripts": {
-    "publish": "tsc && npm version minor && npm publish",
     "sockbot": "tsc && tsc examples/sockbot.ts && node inspect --trace-warnings --unhandled-rejections=strict examples/sockbot.js"
   },
   "author": "",
@@ -15,7 +14,6 @@
     "cross-fetch": "^3.1.4",
     "form-data": "^4.0.0",
     "html-entities": "^2.3.2",
-    "simple-socket-js": "^1.1.10",
     "ws": "^8.4.0"
   },
   "devDependencies": {
