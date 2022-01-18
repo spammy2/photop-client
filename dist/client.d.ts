@@ -26,7 +26,6 @@ export declare class Client {
      * @returns Group; errors if already in group.
      */
     joinGroup(groupinviteid: string): Promise<Group>;
-    leaveGroup(groupid: string): Promise<void>;
     getUser(id: string): Promise<User | undefined>;
     getUserFromUsername(name: string): Promise<User | undefined>;
     /**

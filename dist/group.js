@@ -73,6 +73,11 @@ class Group {
             });
         });
     }
+    leave() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._network.message("LeaveGroup", this.id);
+        });
+    }
     delete() {
         return __awaiter(this, void 0, void 0, function* () {
             throw new Error("Not Implemented");

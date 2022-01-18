@@ -85,11 +85,6 @@ class Client {
             return this._network.groups[rawGroup._id] = new group_1.Group(this._network, rawGroup);
         });
     }
-    leaveGroup(groupid) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._network.message("LeaveGroup", groupid);
-        });
-    }
     getUser(id) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._network.users[id])
