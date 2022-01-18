@@ -3,6 +3,7 @@ import { ClientConfiguration, ClientCredentials } from "./types";
 import { Network } from "./network";
 import { RawUser, User } from "./user";
 import fetch from "cross-fetch";
+import { Group, RawGroup } from "./group";
 
 /**
  * Represents a Photop client
@@ -19,6 +20,10 @@ export class Client {
 	}
 
 	private _network: Network;
+
+	get groups(){
+		return this._network.groups;
+	}
 
 	/**
 	 * @deprecated
@@ -42,6 +47,22 @@ export class Client {
 		return this._network.posts[id];
 	}
 
+	/**
+	 * The short group id that is used for invitations.
+	 * @returns Group; errors if already in group.
+	 */
+	async joinGroup(groupinviteid: string){
+		const id = (await this._network.message<{GroupID: string}>("InviteUpdate", {Task: "Join", GroupID: groupinviteid})).Body.GroupID;
+		
+		if (this._network.groups[id]) /* return;*/ throw new Error("already in group");
+
+		const rawGroup = (await this._network.message<{Group: RawGroup}>("GetGroups", {GroupID: id})).Body.Group;
+		return this._network.groups[rawGroup._id] = new Group(this._network, rawGroup);
+	}
+
+	async leaveGroup(groupid: string){
+		await this._network.message("LeaveGroup", groupid);
+	}
 	
 	async getUser(id: string): Promise<User | undefined> {
 		if (this._network.users[id]) return this._network.users[id];
@@ -90,7 +111,7 @@ export class Client {
 	 * Create a post with text. Images do not seem to work at the present.
 	 */
 	async post(text: string, medias: any[] = [], configuration: [] = []) {
-		return this._network.post(text, medias, configuration);
+		return this._network.post(text, undefined, medias, configuration);
 	}
 
 	/**

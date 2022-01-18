@@ -32,6 +32,9 @@ class Post {
         this.likes = raw.Likes || 0;
         this.chats = [];
         this.id = raw._id;
+        if (raw.GroupID) {
+            this.group = this._network.groups[raw.GroupID];
+        }
     }
     _onChat(chat) {
         if (this._connected) {

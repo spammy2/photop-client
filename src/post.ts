@@ -1,6 +1,7 @@
 import { decode } from "html-entities";
 import { User } from ".";
 import { Chat } from "./chat";
+import { Group } from "./group";
 import { Network } from "./network";
 import { DocumentObject } from "./types";
 
@@ -11,6 +12,8 @@ export class Post {
 	chatCount: number;
 	chats: Chat[];
 	id: string;
+	group?: Group;
+
 	usersLiked: {
 		user: User;
 		likedAt: Date;
@@ -141,12 +144,16 @@ export class Post {
 		this.likes = raw.Likes || 0;
 		this.chats = [];
 		this.id = raw._id;
+		if (raw.GroupID) {
+			this.group = this._network.groups[raw.GroupID];
+		}
 	}
 }
 
 export interface RawPost extends DocumentObject {
 	Chats?: number;
 	Likes?: number;
+	GroupID?: string;
 	Text: string;
 	UserID: string;
 	Timestamp: number;

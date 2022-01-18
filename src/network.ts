@@ -16,11 +16,11 @@ import {
 } from "./user";
 
 import { WebSocket } from "ws";
-
 import SimpleSocket from "./vendor/simplesocket";
+import { Group, RawGroup, RawGroupJoin } from "./group";
+import { RawGroupUser } from "./groupuser";
 
 const SOCKET_URL = "wss://api.photop.live/Server1";
-const FINGERPRINT = "25010157537369604664110537365900144030";
 const IMAGE_UPLOAD_URL = "https://api.photop.live:3000/ImageUpload";
 
 export class Network {
@@ -35,7 +35,8 @@ export class Network {
 	posts: Record<string, Post> = {};
 	chats: Record<string, Chat> = {};
 	users: Record<string, User> = {};
-
+	groups: Record<string, Group> = {};
+	
 	authtoken?: string;
 	userid?: string;
 	connectedChats: string[] = [];
@@ -47,12 +48,17 @@ export class Network {
 	onPost = (post: Post) => {};
 	onReady = () => {};
 
-	async post(text: string, medias: any[], configuration: []) {
+	fingerprint = "25010157537369604664110537365900144030" // useless fingerprint lol
+
+	async post(text: string, groupid: string | undefined, medias: any[], configuration: []) {
 		const body: any = {
 			Text: text,
 			Configuration: configuration,
 			Media: {},
 		};
+		if (groupid) {
+			body.GroupID = groupid;
+		}
 		if (medias.length > 0) {
 			body.Media.ImageCount = medias.length;
 		}
@@ -70,7 +76,7 @@ export class Network {
 					AccountData: {
 						AuthToken: this.authtoken,
 						UserID: this.userid,
-						Fingerprint: FINGERPRINT,
+						Fingerprint: this.fingerprint,
 					},
 					Metadata: { PostID: response.Body.NewPostID },
 				})
@@ -84,11 +90,11 @@ export class Network {
 			});
 		}
 
-		await this.getPosts();
+		await this.getPosts(undefined, undefined, groupid);;
 		return this.posts[response.Body.NewPostID];
 	}
 
-	async getPosts(amount: number = 15, before?: number, initial = false) {
+	async getPosts(amount: number = 15, before?: number, groupid?: string, initial = false) {
 		const response = await this.message<{
 			Posts: RawPost[];
 			Users: RawUser[];
@@ -96,6 +102,7 @@ export class Network {
 				Timestamp: number;
 			})[];
 		}>("GetPosts", {
+			...(groupid ? { GroupID: groupid } : {}),
 			Amount: amount,
 			...(before ? { Before: before } : {}),
 		});
@@ -109,7 +116,11 @@ export class Network {
 			if (!(post.id in this.posts)) {
 				this.posts[post.id] = post;
 				if (!initial) {
-					this.onPost(post);
+					if (groupid) {
+						this.groups[groupid].onGroupPost(post, this.groups[groupid].members[post.author.id]);
+					} else {
+						this.onPost(post);
+					}
 				}
 			}
 		}
@@ -283,6 +294,7 @@ export class Network {
 			} else if ("token" in credentials) {
 				this.authtoken = credentials.token;
 				this.userid = credentials.userid;
+				this.fingerprint = credentials.fingerprint;
 				await this.message<{
 					UserData: AccountData;
 				}>("GetAccountData");
@@ -292,8 +304,38 @@ export class Network {
 				);
 			}
 		}
-		await this.getPosts(undefined, undefined, true);
+		await this.getPosts(undefined, undefined, undefined, true);
 
+		if (this.config?.disableGroups !== true) {
+			const getGroupsResponse = await this.message<{Invites: string[], Groups: RawGroup[], JoinedArr: RawGroupJoin[], Owners: RawGroupUser[]}>("GetGroups", {})
+
+			// Body.Owners is unnecessary because we are already fetching the members of the group;
+			this.processUsers(getGroupsResponse.Body.Owners);
+			for (const rawGroup of getGroupsResponse.Body.Groups) {
+				this.groups[rawGroup._id] = new Group(this, rawGroup);
+				await this.groups[rawGroup._id].onReadyPromise;
+			}
+		}
+		
+		this.simpleSocket.subscribeEvent<{
+			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
+		}>({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid! }, (Data) => {
+			if (this.config?.logSocketMessages) console.log(Data);
+			if (Data.Type === "NewPostAdded") {
+				const NewPostData = (
+					Data as unknown as {
+						NewPostData: DocumentObject & {
+							UserID: string;
+							Timestamp: number;
+							GroupID?: string;
+						};
+					}
+				).NewPostData;
+
+				//this.newPosts[NewPostData._id] = true;
+				this.getPosts(undefined, undefined, NewPostData.GroupID);
+			}
+		});
 		this.onReady();
 	}
 
@@ -313,7 +355,7 @@ export class Network {
 					ReqTask: task,
 					// After careful review from Photop Client staff, we have determined that fingerprint is very useless
 					// The length is completely arbitrary and we can substitute this for a random number generator
-					Fingerprint: FINGERPRINT,
+					Fingerprint: this.fingerprint,
 				},
 			};
 
@@ -353,29 +395,13 @@ export class Network {
 		this.chatDelay = config?.chatDelay || 2000;
 
 		this.socket = new WebSocket(SOCKET_URL);
-		this.simpleSocket.connect({
+
+		const simpleSocketPromise = this.simpleSocket.connect({
 			project_id: "61b9724ea70f1912d5e0eb11",
 			client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
 		});
-		this.simpleSocket.subscribeEvent<{
-			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
-		}>({ Task: "GeneralUpdate", Location: "Home" }, (Data) => {
-			if (config?.logSocketMessages) console.log(Data);
-			if (Data.Type === "NewPostAdded") {
-				const NewPostData = (
-					Data as unknown as {
-						NewPostData: DocumentObject & {
-							UserID: string;
-							Timestamp: number;
-						};
-					}
-				).NewPostData;
+		this.simpleSocket.debug = this.config?.logSocketMessages ?? false;
 
-				//this.newPosts[NewPostData._id] = true;
-
-				this.getPosts();
-			}
-		});
 		this.socket.onmessage = (rawMessage) => {
 			if (rawMessage.data === "pong") return;
 			const message: SocketResponse<unknown> = JSON.parse(
@@ -423,7 +449,9 @@ export class Network {
 			}
 		};
 		this.socket.onopen = () => {
-			this._init(credentials);
+			simpleSocketPromise.then(()=>{
+				this._init(credentials);
+			})
 		};
 	}
 }

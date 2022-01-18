@@ -3,7 +3,7 @@ import { Post } from "./post";
 import { Network } from "./network";
 import { BaseObject, DocumentObject } from "./types";
 export declare class User implements BaseObject {
-    private _network;
+    protected _network: Network;
     createdAt: Date;
     id: string;
     avatarUrl?: string;
@@ -59,6 +59,7 @@ export interface AccountData extends RawUser {
         Followers: number;
     };
     Settings: RawClientUserSettings;
+    ViewingGroupID?: number;
 }
 /** Account data returned from SignInAccount */
 export interface SignInAccountData {

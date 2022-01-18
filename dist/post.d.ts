@@ -1,5 +1,6 @@
 import { User } from ".";
 import { Chat } from "./chat";
+import { Group } from "./group";
 import { Network } from "./network";
 import { DocumentObject } from "./types";
 export declare class Post {
@@ -12,6 +13,7 @@ export declare class Post {
     chatCount: number;
     chats: Chat[];
     id: string;
+    group?: Group;
     usersLiked: {
         user: User;
         likedAt: Date;
@@ -75,6 +77,7 @@ export declare class Post {
 export interface RawPost extends DocumentObject {
     Chats?: number;
     Likes?: number;
+    GroupID?: string;
     Text: string;
     UserID: string;
     Timestamp: number;

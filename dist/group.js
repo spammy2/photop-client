@@ -1,0 +1,87 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Group = exports.GroupInviteType = void 0;
+const groupuser_1 = require("./groupuser");
+var GroupInviteType;
+(function (GroupInviteType) {
+    GroupInviteType[GroupInviteType["Self"] = 0] = "Self";
+    GroupInviteType[GroupInviteType["Anyone"] = 1] = "Anyone";
+    GroupInviteType[GroupInviteType["Unknown"] = 2] = "Unknown";
+})(GroupInviteType = exports.GroupInviteType || (exports.GroupInviteType = {}));
+class Group {
+    constructor(_network, raw) {
+        this._network = _network;
+        this.members = {};
+        this.onUserJoined = (user) => { };
+        this.onUserLeft = (user) => { };
+        this.onGroupPost = (post, user) => { };
+        this.id = raw._id;
+        this.createdAt = new Date(raw.Timestamp);
+        this.name = raw.Name;
+        this.icon = raw.Icon;
+        this.invite = GroupInviteType[raw.Invite];
+        console.log({ Task: "GroupUpdate", GroupID: this.id });
+        this._network.simpleSocket.subscribeEvent({ Task: "GroupUpdate", GroupID: this.id }, (data) => {
+            if (data.Type === "MemberUpdate") {
+                if (data.Member.Status === -1) {
+                    delete this.members[data.Member._id];
+                    this.onUserLeft(this.members[data.Member._id]);
+                }
+                else {
+                    if (this.members[data.Member._id]) {
+                        this.members[data.Member._id].user.update(data.Member);
+                        this.members[data.Member._id].status = data.Member.Status;
+                    }
+                    else {
+                        this.members[data.Member._id] = new groupuser_1.GroupUser(this._network, this, this._network.users[raw._id], data.Member);
+                    }
+                }
+            }
+            else if (data.Type === "NewPostAdded") {
+                console.log("new post added");
+                this._network.getPosts(undefined, undefined, this.id);
+            }
+            else {
+                console.log("unrecognized");
+                console.log(data);
+            }
+        });
+        this.onReadyPromise = new Promise((res, rej) => {
+            this._network.message("GetGroupMembers", { GroupID: this.id }).then((response) => {
+                this._network.processUsers(response.Body.Members);
+                response.Body.Members.forEach(raw => {
+                    if (!this.members[raw._id]) {
+                        this.members[raw._id] = new groupuser_1.GroupUser(this._network, this, this._network.users[raw._id], raw);
+                    }
+                });
+                this.owner = this.members[raw.Owner];
+                this._network.getPosts(undefined, undefined, this.id, true).then(() => {
+                    res();
+                });
+            });
+        });
+    }
+    delete() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error("Not Implemented");
+        });
+    }
+    /**
+     * Create a post with text. Images do not seem to work at the present.
+     */
+    post(text, medias = [], configuration = []) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this._network.post(text, this.id, medias, configuration);
+        });
+    }
+}
+exports.Group = Group;

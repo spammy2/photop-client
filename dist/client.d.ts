@@ -1,6 +1,7 @@
 import { Post } from "./post";
 import { ClientConfiguration, ClientCredentials } from "./types";
 import { User } from "./user";
+import { Group } from "./group";
 /**
  * Represents a Photop client
  * Provides an interface of interactions that can be done by the user.
@@ -10,6 +11,7 @@ export declare class Client {
     get user(): import("./user").ClientUser | undefined;
     get userid(): string | undefined;
     private _network;
+    get groups(): Record<string, Group>;
     /**
      * @deprecated
      * Retrieves a post from cache
@@ -19,6 +21,12 @@ export declare class Client {
      * Gets a post. If it does not exist in cache, attempts to get it by using timestamp of the objectid.
      */
     getPost(id: string): Promise<Post | undefined>;
+    /**
+     * The short group id that is used for invitations.
+     * @returns Group; errors if already in group.
+     */
+    joinGroup(groupinviteid: string): Promise<Group>;
+    leaveGroup(groupid: string): Promise<void>;
     getUser(id: string): Promise<User | undefined>;
     getUserFromUsername(name: string): Promise<User | undefined>;
     /**

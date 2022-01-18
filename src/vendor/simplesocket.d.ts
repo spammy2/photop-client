@@ -1,13 +1,20 @@
 export interface SimpleSocket {
 	subscribeEvent<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): void;
-	connect(details: {project_id: string, client_token: string}): void;
+	connect(details: {project_id: string, client_token: string}): Promise<void>;
+	debug: boolean,
 }
 
-interface SubscriptionQuery {
+type SubscriptionQuery = {
 	Task: "GeneralUpdate",
 	Location: "Home",
+	Groups: string[],
+	UserID: string,
+} | {
+	Task: "GroupUpdate",
+	GroupID: string;
 }
+
 
 declare const api: SimpleSocket;
 
-export default api;
+export = api

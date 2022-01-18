@@ -2,6 +2,7 @@ import { Chat } from "./chat";
 import { Post } from "./post";
 import { Network } from "./network";
 import { BaseObject, DocumentObject } from "./types";
+import { Group, RawGroup, RawGroupJoin } from "./group";
 
 export class User implements BaseObject {
 	createdAt: Date;
@@ -105,7 +106,7 @@ export class User implements BaseObject {
 			}
 			this.following = [...this.following, ...processed];
 
-			// really dude?
+												// really dude?
 			before = response.Body.LastTimestamp as number;
 		}
 	}
@@ -125,7 +126,7 @@ export class User implements BaseObject {
 		}
 	}
 
-	constructor(private _network: Network, /* public */ raw: RawUser) {
+	constructor(protected _network: Network, /* public */ raw: RawUser) {
 		this.createdAt = new Date(
 			raw.CreationTime || parseInt(raw._id.substring(0, 8), 16) * 1000
 		);
@@ -194,6 +195,7 @@ export interface AccountData extends RawUser {
 				Followers: number;
 		  };
 	Settings: RawClientUserSettings;
+	ViewingGroupID?: number;
 }
 
 /** Account data returned from SignInAccount */

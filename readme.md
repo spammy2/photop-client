@@ -36,10 +36,8 @@ const post = client.post("Hey you people");
 ### Replies to posts that contains "bot"
 ```js
 client.onPost = (post)=>{
-	if (post) {
-		if (post.text.match(/bot/)) {
-			post.chat("Bottttt")
-		}
+	if (post.text.match(/bot/)) {
+		post.chat("Bottttt")
 	}
 }
 ```
@@ -60,6 +58,9 @@ post.onChat = (chat)=>{
 
 You can take a look in `examples/sockbot.ts` to see how to create a discord-ish bot.
 
+
+## Contributing
+Photop-Client is not complete! There are many features which are not implemented, like viewing the posts of a user. Documentation is also not fully done. Robot_Engine plans to rely on SimpleSocket instead of normal WebSockets. You can make your own contributions to Photop-Client. Note that it is written in typescript, so you may need to learn it.
 ### Architecture
 Photop-Client abstractifies the client, users, chats, and posts into classes, defined in their respective files.
 A private network class handles everything pertaining to the network and all classes perform their actions by calling methods of it.

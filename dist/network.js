@@ -18,11 +18,12 @@ const post_1 = require("./post");
 const user_1 = require("./user");
 const ws_1 = require("ws");
 const simplesocket_1 = __importDefault(require("./vendor/simplesocket"));
+const group_1 = require("./group");
 const SOCKET_URL = "wss://api.photop.live/Server1";
-const FINGERPRINT = "25010157537369604664110537365900144030";
 const IMAGE_UPLOAD_URL = "https://api.photop.live:3000/ImageUpload";
 class Network {
     constructor(credentials, config) {
+        var _a, _b;
         this.config = config;
         this.simpleSocket = simplesocket_1.default;
         //readonly newPosts: Record<string, boolean> = {};
@@ -30,27 +31,21 @@ class Network {
         this.posts = {};
         this.chats = {};
         this.users = {};
+        this.groups = {};
         this.connectedChats = [];
         this.onPost = (post) => { };
         this.onReady = () => { };
+        this.fingerprint = "25010157537369604664110537365900144030"; // useless fingerprint lol
         this.chatQueue = [];
         this.isProcessing = false;
         this.reqid = 0;
         this.chatDelay = (config === null || config === void 0 ? void 0 : config.chatDelay) || 2000;
         this.socket = new ws_1.WebSocket(SOCKET_URL);
-        this.simpleSocket.connect({
+        const simpleSocketPromise = this.simpleSocket.connect({
             project_id: "61b9724ea70f1912d5e0eb11",
             client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
         });
-        this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home" }, (Data) => {
-            if (config === null || config === void 0 ? void 0 : config.logSocketMessages)
-                console.log(Data);
-            if (Data.Type === "NewPostAdded") {
-                const NewPostData = Data.NewPostData;
-                //this.newPosts[NewPostData._id] = true;
-                this.getPosts();
-            }
-        });
+        this.simpleSocket.debug = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.logSocketMessages) !== null && _b !== void 0 ? _b : false;
         this.socket.onmessage = (rawMessage) => {
             var _a;
             if (rawMessage.data === "pong")
@@ -83,16 +78,21 @@ class Network {
             }
         };
         this.socket.onopen = () => {
-            this._init(credentials);
+            simpleSocketPromise.then(() => {
+                this._init(credentials);
+            });
         };
     }
-    post(text, medias, configuration) {
+    post(text, groupid, medias, configuration) {
         return __awaiter(this, void 0, void 0, function* () {
             const body = {
                 Text: text,
                 Configuration: configuration,
                 Media: {},
             };
+            if (groupid) {
+                body.GroupID = groupid;
+            }
             if (medias.length > 0) {
                 body.Media.ImageCount = medias.length;
             }
@@ -103,7 +103,7 @@ class Network {
                     AccountData: {
                         AuthToken: this.authtoken,
                         UserID: this.userid,
-                        Fingerprint: FINGERPRINT,
+                        Fingerprint: this.fingerprint,
                     },
                     Metadata: { PostID: response.Body.NewPostID },
                 }));
@@ -115,13 +115,14 @@ class Network {
                     body: data,
                 });
             }
-            yield this.getPosts();
+            yield this.getPosts(undefined, undefined, groupid);
+            ;
             return this.posts[response.Body.NewPostID];
         });
     }
-    getPosts(amount = 15, before, initial = false) {
+    getPosts(amount = 15, before, groupid, initial = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield this.message("GetPosts", Object.assign({ Amount: amount }, (before ? { Before: before } : {})));
+            const response = yield this.message("GetPosts", Object.assign(Object.assign(Object.assign({}, (groupid ? { GroupID: groupid } : {})), { Amount: amount }), (before ? { Before: before } : {})));
             this.processUsers(response.Body.Users);
             const posts = response.Body.Posts.map((rawPost) => {
                 return new post_1.Post(this, rawPost, this.users[rawPost.UserID]);
@@ -130,7 +131,12 @@ class Network {
                 if (!(post.id in this.posts)) {
                     this.posts[post.id] = post;
                     if (!initial) {
-                        this.onPost(post);
+                        if (groupid) {
+                            this.groups[groupid].onGroupPost(post, this.groups[groupid].members[post.author.id]);
+                        }
+                        else {
+                            this.onPost(post);
+                        }
                     }
                 }
             }
@@ -272,13 +278,31 @@ class Network {
                 else if ("token" in credentials) {
                     this.authtoken = credentials.token;
                     this.userid = credentials.userid;
+                    this.fingerprint = credentials.fingerprint;
                     yield this.message("GetAccountData");
                 }
                 else {
                     console.warn("Credentials were provided but they are not username-password or token-userid. Falling back to 'guest' mode");
                 }
             }
-            yield this.getPosts(undefined, undefined, true);
+            yield this.getPosts(undefined, undefined, undefined, true);
+            const getGroupsResponse = yield this.message("GetGroups", {});
+            // Body.Owners is unnecessary because we are already fetching the members of the group;
+            this.processUsers(getGroupsResponse.Body.Owners);
+            for (const rawGroup of getGroupsResponse.Body.Groups) {
+                this.groups[rawGroup._id] = new group_1.Group(this, rawGroup);
+                yield this.groups[rawGroup._id].onReadyPromise;
+            }
+            this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid }, (Data) => {
+                var _a;
+                if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.logSocketMessages)
+                    console.log(Data);
+                if (Data.Type === "NewPostAdded") {
+                    const NewPostData = Data.NewPostData;
+                    //this.newPosts[NewPostData._id] = true;
+                    this.getPosts(undefined, undefined, NewPostData.GroupID);
+                }
+            });
             this.onReady();
         });
     }
@@ -295,7 +319,7 @@ class Network {
                     : {})), { ReqID: this.reqid, ReqTask: task, 
                     // After careful review from Photop Client staff, we have determined that fingerprint is very useless
                     // The length is completely arbitrary and we can substitute this for a random number generator
-                    Fingerprint: FINGERPRINT }),
+                    Fingerprint: this.fingerprint }),
             };
             if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.logSocketMessages) {
                 console.log("SEND", message);

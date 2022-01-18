@@ -16,6 +16,7 @@ exports.Client = void 0;
 const network_1 = require("./network");
 const user_1 = require("./user");
 const cross_fetch_1 = __importDefault(require("cross-fetch"));
+const group_1 = require("./group");
 /**
  * Represents a Photop client
  * Provides an interface of interactions that can be done by the user.
@@ -49,6 +50,9 @@ class Client {
     get userid() {
         return this._network.userid;
     }
+    get groups() {
+        return this._network.groups;
+    }
     /**
      * @deprecated
      * Retrieves a post from cache
@@ -66,6 +70,24 @@ class Client {
             yield this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
             console.log(this._network.posts);
             return this._network.posts[id];
+        });
+    }
+    /**
+     * The short group id that is used for invitations.
+     * @returns Group; errors if already in group.
+     */
+    joinGroup(groupinviteid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const id = (yield this._network.message("InviteUpdate", { Task: "Join", GroupID: groupinviteid })).Body.GroupID;
+            if (this._network.groups[id]) /* return;*/
+                throw new Error("already in group");
+            const rawGroup = (yield this._network.message("GetGroups", { GroupID: id })).Body.Group;
+            return this._network.groups[rawGroup._id] = new group_1.Group(this._network, rawGroup);
+        });
+    }
+    leaveGroup(groupid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._network.message("LeaveGroup", groupid);
         });
     }
     getUser(id) {
@@ -103,7 +125,7 @@ class Client {
      */
     post(text, medias = [], configuration = []) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this._network.post(text, medias, configuration);
+            return this._network.post(text, undefined, medias, configuration);
         });
     }
     /**
