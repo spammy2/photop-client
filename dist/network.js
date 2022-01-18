@@ -269,6 +269,7 @@ class Network {
         });
     }
     _init(credentials) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let a = yield this.message("CreateConnection");
             if (credentials) {
@@ -286,12 +287,14 @@ class Network {
                 }
             }
             yield this.getPosts(undefined, undefined, undefined, true);
-            const getGroupsResponse = yield this.message("GetGroups", {});
-            // Body.Owners is unnecessary because we are already fetching the members of the group;
-            this.processUsers(getGroupsResponse.Body.Owners);
-            for (const rawGroup of getGroupsResponse.Body.Groups) {
-                this.groups[rawGroup._id] = new group_1.Group(this, rawGroup);
-                yield this.groups[rawGroup._id].onReadyPromise;
+            if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.disableGroups) !== true) {
+                const getGroupsResponse = yield this.message("GetGroups", {});
+                // Body.Owners is unnecessary because we are already fetching the members of the group;
+                this.processUsers(getGroupsResponse.Body.Owners);
+                for (const rawGroup of getGroupsResponse.Body.Groups) {
+                    this.groups[rawGroup._id] = new group_1.Group(this, rawGroup);
+                    yield this.groups[rawGroup._id].onReadyPromise;
+                }
             }
             this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid }, (Data) => {
                 var _a;

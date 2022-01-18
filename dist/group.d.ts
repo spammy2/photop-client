@@ -18,6 +18,7 @@ export declare class Group implements BaseObject {
     invite: GroupInviteType;
     onUserJoined: (user: GroupUser) => void;
     onUserLeft: (user: GroupUser) => void;
+    onDelete: () => void;
     onReadyPromise: Promise<void>;
     onGroupPost: (post: Post, user: GroupUser) => void;
     delete(): Promise<void>;

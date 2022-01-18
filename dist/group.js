@@ -23,6 +23,7 @@ class Group {
         this.members = {};
         this.onUserJoined = (user) => { };
         this.onUserLeft = (user) => { };
+        this.onDelete = () => { };
         this.onGroupPost = (post, user) => { };
         this.id = raw._id;
         this.createdAt = new Date(raw.Timestamp);
@@ -33,8 +34,9 @@ class Group {
         this._network.simpleSocket.subscribeEvent({ Task: "GroupUpdate", GroupID: this.id }, (data) => {
             if (data.Type === "MemberUpdate") {
                 if (data.Member.Status === -1) {
+                    const groupUser = this.members[data.Member._id];
                     delete this.members[data.Member._id];
-                    this.onUserLeft(this.members[data.Member._id]);
+                    this.onUserLeft(groupUser);
                 }
                 else {
                     if (this.members[data.Member._id]) {
@@ -42,17 +44,18 @@ class Group {
                         this.members[data.Member._id].status = data.Member.Status;
                     }
                     else {
-                        this.members[data.Member._id] = new groupuser_1.GroupUser(this._network, this, this._network.users[raw._id], data.Member);
+                        this._network.processUsers([data.Member]);
+                        this.members[data.Member._id] = new groupuser_1.GroupUser(this._network, this, this._network.users[data.Member._id], data.Member);
+                        this.onUserJoined(this.members[data.Member._id]);
                     }
                 }
             }
             else if (data.Type === "NewPostAdded") {
-                console.log("new post added");
                 this._network.getPosts(undefined, undefined, this.id);
             }
-            else {
-                console.log("unrecognized");
-                console.log(data);
+            else if (data.Type === "Delete") {
+                delete this._network.groups[this.id];
+                this.onDelete();
             }
         });
         this.onReadyPromise = new Promise((res, rej) => {
