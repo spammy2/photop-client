@@ -68,7 +68,6 @@ class Client {
             if (this._network.posts[id])
                 return this._network.posts[id];
             yield this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
-            console.log(this._network.posts);
             return this._network.posts[id];
         });
     }
@@ -77,12 +76,15 @@ class Client {
      * @returns Group; errors if already in group.
      */
     joinGroup(groupinviteid) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const id = (yield this._network.message("InviteUpdate", { Task: "Join", GroupID: groupinviteid })).Body.GroupID;
-            if (this._network.groups[id]) /* return;*/
+            if ((_a = this._network.groups[id]) === null || _a === void 0 ? void 0 : _a.members[this.userid]) /* return;*/
                 throw new Error("already in group");
             const rawGroup = (yield this._network.message("GetGroups", { GroupID: id })).Body.Group;
-            return this._network.groups[rawGroup._id] = new group_1.Group(this._network, rawGroup);
+            this._network.groups[rawGroup._id] = new group_1.Group(this._network, rawGroup);
+            this._network.onGroupsChanged();
+            return this._network.groups[rawGroup._id];
         });
     }
     getUser(id) {

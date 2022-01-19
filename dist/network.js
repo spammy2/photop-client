@@ -132,7 +132,6 @@ class Network {
                     this.posts[post.id] = post;
                     if (!initial) {
                         if (groupid) {
-                            console.log(post, posts);
                             this.groups[groupid].onPost(post);
                         }
                         else {
@@ -275,6 +274,11 @@ class Network {
             this.user = new user_1.ClientUser(this, response.Body);
         });
     }
+    onGroupsChanged() {
+        if (this.generalUpdateSub) {
+            this.simpleSocket.editSubscribe(this.generalUpdateSub, { Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid });
+        }
+    }
     _init(credentials) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -303,10 +307,7 @@ class Network {
                     yield this.groups[rawGroup._id].onReadyPromise;
                 }
             }
-            this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid }, (Data) => {
-                var _a;
-                if ((_a = this.config) === null || _a === void 0 ? void 0 : _a.logSocketMessages)
-                    console.log(Data);
+            this.generalUpdateSub = this.simpleSocket.subscribeEvent({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid }, (Data) => {
                 if (Data.Type === "NewPostAdded") {
                     const NewPostData = Data.NewPostData;
                     //this.newPosts[NewPostData._id] = true;

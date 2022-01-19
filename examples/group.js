@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const client = new Client(
 	{ username: process.env.USERNAME, password: process.env.PASSWORD },
-	{ logSocketMessages: true }
+	{ logSocketMessages: false }
 );
 
 // Kick user bot

@@ -1,5 +1,6 @@
 export interface SimpleSocket {
-	subscribeEvent<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): void;
+	subscribeEvent<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): string;
+	editSubscribe(subid: string, query: SubscriptionQuery): void;
 	connect(details: {project_id: string, client_token: string}): Promise<void>;
 	debug: boolean,
 }
@@ -17,4 +18,4 @@ type SubscriptionQuery = {
 
 declare const api: SimpleSocket;
 
-export = api
+export default api

@@ -27,7 +27,7 @@ export class Group implements BaseObject {
 	onPost = (post: Post)=>{}
 
 	async leave(){
-		await this._network.message("LeaveGroup", this.id);
+		await this._network.message("LeaveGroup", {GroupID: this.id});
 	}
 
 	async delete(){
@@ -47,7 +47,6 @@ export class Group implements BaseObject {
 		this.name = raw.Name;
 		this.icon = raw.Icon;
 		this.invite = GroupInviteType[raw.Invite];
-		console.log({Task: "GroupUpdate", GroupID: this.id})
 		this._network.simpleSocket.subscribeEvent<{
 			Type: "Delete" | "Refresh" | "MemberUpdate" | "NewPostAdded",
 			NewPostData: DocumentObject & {Timestamp: number, UserID: string},
@@ -72,6 +71,7 @@ export class Group implements BaseObject {
 				this._network.getPosts(undefined, undefined, this.id);
 			} else if (data.Type === "Delete"){
 				delete this._network.groups[this.id];
+				this._network.onGroupsChanged();
 				this.onDelete();
 			}
 		})

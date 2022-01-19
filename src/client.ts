@@ -43,7 +43,6 @@ export class Client {
 			10,
 			parseInt(id.substring(0, 8), 16) * 1000 - 5000
 		); //offset by 5 seconds in case the time is actually BEFORE it was posted
-		console.log(this._network.posts);
 		return this._network.posts[id];
 	}
 
@@ -54,10 +53,12 @@ export class Client {
 	async joinGroup(groupinviteid: string){
 		const id = (await this._network.message<{GroupID: string}>("InviteUpdate", {Task: "Join", GroupID: groupinviteid})).Body.GroupID;
 		
-		if (this._network.groups[id]) /* return;*/ throw new Error("already in group");
+		if (this._network.groups[id]?.members[this.userid!]) /* return;*/ throw new Error("already in group");
 
 		const rawGroup = (await this._network.message<{Group: RawGroup}>("GetGroups", {GroupID: id})).Body.Group;
-		return this._network.groups[rawGroup._id] = new Group(this._network, rawGroup);
+		this._network.groups[rawGroup._id] = new Group(this._network, rawGroup);
+		this._network.onGroupsChanged();
+		return this._network.groups[rawGroup._id];
 	}
 	
 	async getUser(id: string): Promise<User | undefined> {

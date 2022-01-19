@@ -30,7 +30,6 @@ class Group {
         this.name = raw.Name;
         this.icon = raw.Icon;
         this.invite = GroupInviteType[raw.Invite];
-        console.log({ Task: "GroupUpdate", GroupID: this.id });
         this._network.simpleSocket.subscribeEvent({ Task: "GroupUpdate", GroupID: this.id }, (data) => {
             if (data.Type === "MemberUpdate") {
                 if (data.Member.Status === -1) {
@@ -55,6 +54,7 @@ class Group {
             }
             else if (data.Type === "Delete") {
                 delete this._network.groups[this.id];
+                this._network.onGroupsChanged();
                 this.onDelete();
             }
         });
@@ -75,7 +75,7 @@ class Group {
     }
     leave() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._network.message("LeaveGroup", this.id);
+            yield this._network.message("LeaveGroup", { GroupID: this.id });
         });
     }
     delete() {

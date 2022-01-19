@@ -3,12 +3,11 @@ import { Post } from "./post";
 import { ClientConfiguration, ClientCredentials, ReqTask, SocketResponse } from "./types";
 import { ClientUser, RawUser, User } from "./user";
 import { WebSocket } from "ws";
-import SimpleSocket from "./vendor/simplesocket";
 import { Group } from "./group";
 export declare class Network {
     config?: ClientConfiguration | undefined;
     readonly socket: WebSocket;
-    readonly simpleSocket: SimpleSocket.SimpleSocket;
+    readonly simpleSocket: import("./vendor/simplesocket").SimpleSocket;
     readonly awaitingMessages: Record<string, (result: SocketResponse<any>) => void>;
     posts: Record<string, Post>;
     chats: Record<string, Chat>;
@@ -22,6 +21,7 @@ export declare class Network {
     onPost: (post: Post) => void;
     onReady: () => void;
     fingerprint: string;
+    generalUpdateSub?: string;
     post(text: string, groupid: string | undefined, medias: any[], configuration: []): Promise<Post>;
     getPosts(amount?: number, before?: number, groupid?: string, initial?: boolean): Promise<Post[]>;
     connectChat(postid: string): Promise<void>;
@@ -42,6 +42,7 @@ export declare class Network {
     private _chat;
     processChats(rawChats: RawChat[]): void;
     authenticate(username: string, password: string): Promise<void>;
+    onGroupsChanged(): void;
     private _init;
     private reqid;
     message<Body>(task: ReqTask, body?: any): Promise<SocketResponse<Body>>;

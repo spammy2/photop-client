@@ -1,4 +1,3 @@
-// moved to https://github.com/spammy2/sockbot to make use of the new npm package
 // why am i putting sockbot.ts in source? because i dont know where to put it so it just gonna go in as well
 import { Chat, Client, Post } from "..";
 import { config } from "dotenv";
@@ -14,18 +13,47 @@ const help = {
 	like: "Likes a post",
 	unlike: "Unlike a post",
 	ping: "Sends back pong.",
-	post: "Posts a message",
-	echo: "Sends a message",
-	reply: "Replies with a message",
+	post: "sb!post {message} Posts a message",
+	echo: "sb!echo {message} Sends a message",
+	reply: "sb!reply {message} Replies with a message",
 	disconnect: "{perms>=1} Stop listening for commands in current post.",
+	follow: "sb!follow {username} Follows a user by their username",
+	unfollow: "sb!unfollow {username} Unfollows a user by their username",
 	help: "Shows a list of commands or info on a specific command",
-	about: "Gives opinion on certain things.",
+	about: "sb!about {topic} Gives opinion on certain things.",
+	hook: "sb!hook {id} Listens to a post the same way adding +SockBot to your post would.",
+	joingroup: "sb!joingroup {inviteid} Invites the bot to a group."
 };
 
 const commands: Record<
 	string,
 	{ func: (chat: Chat, body: string) => void; perms?: number }
 > = {
+	joingroup: {
+		func: async (chat, body) => {
+			try {
+				const group = await client.joinGroup(body);
+				const post = await group.post("SockBot has joined!")
+				post.chat("You can invite me with sb!joingroup on a post that I am listening. (Not this one)");
+				group.onPost = onPost;
+				chat.reply(`Joined ${group.name}!`);
+			} catch (e) {
+				chat.reply(String(e));
+			}
+		}
+	},
+	leavegroup: {
+		func: async (chat, body) => {
+			const group = client.groups[body];
+			if (group && group.members[client.userid]) {
+				await group.leave();
+				chat.reply("Left group")
+				return;
+			}
+			chat.reply("Not part of group.")
+		},
+		perms: 1,
+	},
 	like: {
 		func: (chat) => {
 			chat.post.like();
@@ -55,10 +83,38 @@ const commands: Record<
 			}
 		},
 	},
+	follow: {
+		func: async (chat, body) => {
+			const user = await client.getUserFromUsername(body);
+			if (!user) return chat.reply("User not found")
+			user.follow().then((success) => {
+				if (success) {
+					chat.reply(`Followed ${user!.username}`);
+				} else {
+					chat.reply(`Failed to follow ${user!.username}. (May already be following)`)
+				}
+			});
+		},
+	},
+	unfollow: {
+		func: async (chat, body) => {
+			const user = await client.getUserFromUsername(body);
+			if (!user) return chat.reply("User not found")
+			user.follow().then((success) => {
+				if (success) {
+					chat.reply(`Followed ${user!.username}`);
+				} else {
+					chat.reply(`Failed to unfollow ${user!.username}. (May already not be following)`)
+				}
+			});
+		},
+	},
 	reply: {
 		func: (chat, body) => {
 			if (body === "") {
-				chat.reply("Cannot reply with an empty message. Ex: sb!reply test");
+				chat.reply(
+					"Cannot reply with an empty message. Ex: sb!reply test"
+				);
 			} else {
 				chat.reply(body);
 			}
@@ -76,19 +132,24 @@ const commands: Record<
 	help: {
 		func: (chat, body) => {
 			if (body === "") {
-				chat.reply(Object.keys(help).join(", "));
+				chat.reply(
+					Object.keys(help).join(", ") +
+						". You can use sb!help {command} to get more info."
+				);
 			} else if (body in help) {
 				chat.reply(help[body as keyof typeof help]);
+			} else {
+				chat.reply(`not found: "${body}"`);
 			}
 		},
 	},
 	hook: {
-		func: async (chat, body)=>{
+		func: async (chat, body) => {
 			let post = await client.getPost(body);
 			if (post) {
 				hookPost(post);
 			}
-		}
+		},
 	},
 	about: {
 		func: (chat, body) => {
@@ -113,7 +174,7 @@ function handleCommand(chat: Chat, command: string) {
 	const args = command.match(/([A-Za-z]+)(.*)/);
 	if (args) {
 		const cmd = args[1].toLowerCase();
-		const body = args[2];
+		const body = args[2].substring(1);
 
 		const commandObj = commands[cmd];
 		if (commandObj) {
@@ -140,34 +201,44 @@ function handleCommand(chat: Chat, command: string) {
 }
 
 async function hookPost(post: Post) {
-	console.log("trying to chatto");
 	post.chat("SockBot is listening. Run sb!help for a list of commands");
-	const setBack = await post.connect(20000, () => {
+	const setBack = await post.connect(60000, () => {
 		post.chat("SockBot disconnected. Reason: Inactivity");
 	});
 	post.onChat = (chat) => {
 		setBack();
-		if (chat.text.startsWith("sb!")) {
+		if (chat.text.startsWith("sb!") && chat.user!==client.user) {
 			handleCommand(chat, chat.text.substring(3).trim());
 		}
 	};
 }
 
-client.onPost = (post) => {
-	if (post.text.match(/\+SockBot/)) {
+function onPost(post: Post){
+	if (post.author.username === "Placedropper") {
+		post.chat("Cringe")
+		return;
+	}
+
+	if (post.text.match(/\+SockBot/i)) {
 		hookPost(post);
 	}
+	
 	if (post.text.match(/sb\![a-zA-Z0-9]/)) {
-		post.chat("SockBot does not support running commands via posts. Append +SockBot to your post first, then run command as a chat..");
+		post.chat(
+			"SockBot does not support running commands via posts. Append +SockBot to your post first, then run command as a chat.."
+		);
 	}
-};
+}
+
+//client.onPost = onPost;
 
 client.onReady = async () => {
 	console.log("READY!");
-
+	//client.groups["61c7637eebb7436adbfcdc11"].onPost = onPost;
+	client.onPost = onPost;
 	//const post = await client.post("Hello. I am SockBot. I am an actual bot, and I actually work.");
 	//const post = client.getPostFromCache("61c6dffae1e6417b595d63d1")
 	//hookPost(post);
 };
 
-module.exports = {client}
+console.log("running sockbot");

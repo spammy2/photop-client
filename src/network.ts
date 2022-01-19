@@ -49,6 +49,8 @@ export class Network {
 	onReady = () => {};
 
 	fingerprint = "25010157537369604664110537365900144030" // useless fingerprint lol
+	
+	generalUpdateSub?: string;
 
 	async post(text: string, groupid: string | undefined, medias: any[], configuration: []) {
 		const body: any = {
@@ -117,7 +119,6 @@ export class Network {
 				this.posts[post.id] = post;
 				if (!initial) {
 					if (groupid) {
-						console.log(post, posts);
 						this.groups[groupid].onPost(post);
 					} else {
 						this.onPost(post);
@@ -288,6 +289,12 @@ export class Network {
 		this.user = new ClientUser(this, response.Body);
 	}
 
+	onGroupsChanged(){
+		if (this.generalUpdateSub){ 
+			this.simpleSocket.editSubscribe(this.generalUpdateSub, { Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid! });
+		}
+	}
+
 	private async _init(credentials?: ClientCredentials) {
 		let a = await this.message("CreateConnection");
 		if (credentials) {
@@ -322,10 +329,9 @@ export class Network {
 			}
 		}
 		
-		this.simpleSocket.subscribeEvent<{
+		this.generalUpdateSub = this.simpleSocket.subscribeEvent<{
 			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
 		}>({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid! }, (Data) => {
-			if (this.config?.logSocketMessages) console.log(Data);
 			if (Data.Type === "NewPostAdded") {
 				const NewPostData = (
 					Data as unknown as {
