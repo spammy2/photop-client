@@ -11,9 +11,10 @@ export declare class User implements BaseObject {
     roles: Role[];
     private _clientUserIsFollowing?;
     /**
-     * Gets a user's post history
+     * Looks up a user's post history, looks up from newest to oldest.
+     * @param oldest Limits the amount of posts searched up to a certain date. By default this is 0, which means it looks up all posts.
      */
-    getPosts(): Promise<Post[]>;
+    getPosts(oldest?: number): Promise<Post[]>;
     /**
      * Gets a user's chat history
      */

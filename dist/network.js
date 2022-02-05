@@ -46,6 +46,10 @@ class Network {
             client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
         });
         this.simpleSocket.debug = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.logSocketMessages) !== null && _b !== void 0 ? _b : false;
+        // restart socket if it somehow closes
+        this.socket.onclose = () => {
+            this.socket = new ws_1.WebSocket(SOCKET_URL);
+        };
         this.socket.onmessage = (rawMessage) => {
             var _a;
             if (rawMessage.data === "pong")
@@ -115,14 +119,13 @@ class Network {
                     body: data,
                 });
             }
-            yield this.getPosts(undefined, undefined, groupid);
-            ;
+            yield this.getPosts({ groupid });
             return this.posts[response.Body.NewPostID];
         });
     }
-    getPosts(amount = 15, before, groupid, initial = false) {
+    getPosts({ amount = 15, groupid, before, userid, initial }) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield this.message("GetPosts", Object.assign(Object.assign(Object.assign({}, (groupid ? { GroupID: groupid } : {})), { Amount: amount }), (before ? { Before: before } : {})));
+            const response = yield this.message("GetPosts", Object.assign(Object.assign(Object.assign(Object.assign({}, (groupid ? { GroupID: groupid } : {})), (userid ? { FromUserID: userid } : {})), { Amount: amount }), (before ? { Before: before } : {})));
             this.processUsers(response.Body.Users);
             const posts = response.Body.Posts.map((rawPost) => {
                 return new post_1.Post(this, rawPost, this.users[rawPost.UserID]);
@@ -297,7 +300,7 @@ class Network {
                     console.warn("Credentials were provided but they are not username-password or token-userid. Falling back to 'guest' mode");
                 }
             }
-            yield this.getPosts(undefined, undefined, undefined, true);
+            yield this.getPosts({ initial: true });
             if (((_a = this.config) === null || _a === void 0 ? void 0 : _a.disableGroups) !== true) {
                 const getGroupsResponse = yield this.message("GetGroups", {});
                 // Body.Owners is unnecessary because we are already fetching the members of the group;
@@ -311,7 +314,7 @@ class Network {
                 if (Data.Type === "NewPostAdded") {
                     const NewPostData = Data.NewPostData;
                     //this.newPosts[NewPostData._id] = true;
-                    this.getPosts(undefined, undefined, NewPostData.GroupID);
+                    this.getPosts({ groupid: NewPostData.GroupID });
                 }
             });
             this.onReady();

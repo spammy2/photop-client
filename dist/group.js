@@ -50,7 +50,7 @@ class Group {
                 }
             }
             else if (data.Type === "NewPostAdded") {
-                this._network.getPosts(undefined, undefined, this.id);
+                this._network.getPosts({ groupid: this.id });
             }
             else if (data.Type === "Delete") {
                 delete this._network.groups[this.id];
@@ -67,7 +67,7 @@ class Group {
                     }
                 });
                 this.owner = this.members[raw.Owner];
-                this._network.getPosts(undefined, undefined, this.id, true).then(() => {
+                this._network.getPosts({ groupid: this.id, initial: true }).then(() => {
                     res();
                 });
             });

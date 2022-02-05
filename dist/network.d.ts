@@ -6,7 +6,7 @@ import { WebSocket } from "ws";
 import { Group } from "./group";
 export declare class Network {
     config?: ClientConfiguration | undefined;
-    readonly socket: WebSocket;
+    socket: WebSocket;
     readonly simpleSocket: import("./vendor/simplesocket").SimpleSocket;
     readonly awaitingMessages: Record<string, (result: SocketResponse<any>) => void>;
     posts: Record<string, Post>;
@@ -23,7 +23,7 @@ export declare class Network {
     fingerprint: string;
     generalUpdateSub?: string;
     post(text: string, groupid: string | undefined, medias: any[], configuration: []): Promise<Post>;
-    getPosts(amount?: number, before?: number, groupid?: string, initial?: boolean): Promise<Post[]>;
+    getPosts({ amount, groupid, before, userid, initial }: Partial<GetPostsQuery>): Promise<Post[]>;
     connectChat(postid: string): Promise<void>;
     disconnectChat(postid: string): Promise<void>;
     processUsers(rawUsers: RawUser[]): User[];
@@ -52,4 +52,11 @@ export declare class Network {
         ClientFunction?: "NewChatRecieve" | undefined;
     }>;
     constructor(credentials?: ClientCredentials, config?: ClientConfiguration | undefined);
+}
+export interface GetPostsQuery {
+    amount: number;
+    before: number;
+    userid: string;
+    groupid: string;
+    initial: true;
 }

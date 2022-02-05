@@ -24,10 +24,36 @@ class User {
         this.roles = raw.Role || [];
     }
     /**
-     * Gets a user's post history
+     * Looks up a user's post history, looks up from newest to oldest.
+     * @param oldest Limits the amount of posts searched up to a certain date. By default this is 0, which means it looks up all posts.
      */
-    getPosts() {
-        throw new Error("Not Implemented");
+    getPosts(oldest = 0) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let last = yield this._network.getPosts({ userid: this.id });
+            let all = [];
+            for (const p of last) {
+                if (p.createdAt.getTime() >= oldest) {
+                    all.push(p);
+                }
+                else {
+                    return all;
+                }
+            }
+            while (true) {
+                last = yield this._network.getPosts({ userid: this.id, before: last[last.length - 1].createdAt.getTime() });
+                if (last.length === 0) {
+                    return all;
+                }
+                for (const p of last) {
+                    if (p.createdAt.getTime() >= oldest) {
+                        all.push(p);
+                    }
+                    else {
+                        return all;
+                    }
+                }
+            }
+        });
     }
     /**
      * Gets a user's chat history

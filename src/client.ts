@@ -1,9 +1,14 @@
 import { Post } from "./post";
-import { ClientConfiguration, ClientCredentials } from "./types";
+import {
+	ClientConfiguration,
+	ClientCredentials,
+	GroupInviteData,
+} from "./types";
 import { Network } from "./network";
-import { RawUser, User } from "./user";
+import { User } from "./user";
 import fetch from "cross-fetch";
 import { Group, RawGroup } from "./group";
+import { RawUser } from "./usertypes";
 
 /**
  * Represents a Photop client
@@ -21,7 +26,7 @@ export class Client {
 
 	private _network: Network;
 
-	get groups(){
+	get groups() {
 		return this._network.groups;
 	}
 
@@ -39,28 +44,38 @@ export class Client {
 	async getPost(id: string): Promise<Post | undefined> {
 		if (this._network.posts[id]) return this._network.posts[id];
 
-		await this._network.getPosts(
-			10,
-			parseInt(id.substring(0, 8), 16) * 1000 - 5000
-		); //offset by 5 seconds in case the time is actually BEFORE it was posted
+		await this._network.getPosts({
+			amount: 10,
+			before: parseInt(id.substring(0, 8), 16) * 1000 - 5000,
+		}); //offset by 5 seconds in case the time is actually BEFORE it was posted
 		return this._network.posts[id];
 	}
 
 	/**
-	 * The short group id that is used for invitations.
+	 * The short group id that is used for invitations OR the group id itself.
 	 * @returns Group; errors if already in group.
 	 */
-	async joinGroup(groupinviteid: string){
-		const id = (await this._network.message<{GroupID: string}>("InviteUpdate", {Task: "Join", GroupID: groupinviteid})).Body.GroupID;
-		
-		if (this._network.groups[id]?.members[this.userid!]) /* return;*/ throw new Error("already in group");
+	async joinGroup(groupid: string) {
+		const id = (
+			await this._network.message<{ GroupID: string }>("InviteUpdate", {
+				Task: "Join",
+				GroupID: groupid,
+			})
+		).Body.GroupID;
 
-		const rawGroup = (await this._network.message<{Group: RawGroup}>("GetGroups", {GroupID: id})).Body.Group;
+		if (this._network.groups[id]?.members[this.userid!])
+			/* return;*/ throw new Error("already in group");
+
+		const rawGroup = (
+			await this._network.message<{ Group: RawGroup }>("GetGroups", {
+				GroupID: id,
+			})
+		).Body.Group;
 		this._network.groups[rawGroup._id] = new Group(this._network, rawGroup);
 		this._network.onGroupsChanged();
 		return this._network.groups[rawGroup._id];
 	}
-	
+
 	async getUser(id: string): Promise<User | undefined> {
 		if (this._network.users[id]) return this._network.users[id];
 
@@ -73,21 +88,24 @@ export class Client {
 			})) as { user?: RawUser };
 
 		if (data.user) {
-			return new User(this._network, data.user);
+			return User.FromRaw(this._network, data.user);
 		}
 	}
 
 	async getUserFromUsername(name: string): Promise<User | undefined> {
 		for (const userid in this._network.users) {
-			if (this._network.users[userid].username===name) {
+			if (this._network.users[userid].username === name) {
 				return this._network.users[userid];
 			}
 		}
-		const response = await this._network.message<{Result: RawUser[]}>("Search", {Type:"Users", Search: name});
+		const response = await this._network.message<{ Result: RawUser[] }>(
+			"Search",
+			{ Type: "Users", Search: name }
+		);
 		this._network.processUsers(response.Body.Result);
 
 		for (const userid in this._network.users) {
-			if (this._network.users[userid].username===name) {
+			if (this._network.users[userid].username === name) {
 				return this._network.users[userid];
 			}
 		}
@@ -101,6 +119,9 @@ export class Client {
 	 * })
 	 */
 	onPost = (post: Post) => {};
+
+	// may change in the future to show a Group instead of the raw invite
+	onInvite = (invite: GroupInviteData) => {};
 
 	onReady = () => {};
 
@@ -136,6 +157,9 @@ export class Client {
 		this._network = new Network(credentials, configuration);
 		this._network.onPost = (post) => {
 			this.onPost(post);
+		};
+		this._network.onInvite = (invite) => {
+			this.onInvite(invite);
 		};
 		this._network.onReady = () => {
 			this.onReady();

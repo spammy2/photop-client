@@ -2,7 +2,8 @@ import { GroupUser, RawGroupUser } from "./groupuser";
 import { Network } from "./network";
 import { Post } from "./post";
 import { BaseObject, DocumentObject } from "./types";
-import { RawUser, User } from "./user";
+import { User } from "./user";
+import { RawUser } from "./usertypes";
 
 export enum GroupInviteType {
 	Self,
@@ -13,11 +14,13 @@ export enum GroupInviteType {
 export class Group implements BaseObject {
 	id: string;
 	createdAt: Date;
+	// numerical form of createdAt
+	timestamp: number;
 	name: string;
 	members: Record<string, GroupUser> = {};
 	owner?: GroupUser;
 	icon?: string;
-	invite: GroupInviteType;
+	inviteType: GroupInviteType;
 	onUserJoined = (user: GroupUser)=>{};
 	onUserLeft = (user: GroupUser)=>{};
 	onDelete = ()=>{};
@@ -44,9 +47,10 @@ export class Group implements BaseObject {
 	constructor(private _network: Network, raw: RawGroup){
 		this.id = raw._id;
 		this.createdAt = new Date(raw.Timestamp);
+		this.timestamp = raw.Timestamp;
 		this.name = raw.Name;
 		this.icon = raw.Icon;
-		this.invite = GroupInviteType[raw.Invite];
+		this.inviteType = GroupInviteType[raw.Invite];
 		this._network.simpleSocket.subscribeEvent<{
 			Type: "Delete" | "Refresh" | "MemberUpdate" | "NewPostAdded",
 			NewPostData: DocumentObject & {Timestamp: number, UserID: string},
@@ -59,7 +63,7 @@ export class Group implements BaseObject {
 					this.onUserLeft(groupUser)
 				} else {
 					if (this.members[data.Member._id]) {
-						this.members[data.Member._id].user.update(data.Member);
+						this.members[data.Member._id].user.updateRaw(data.Member);
 						this.members[data.Member._id].status = data.Member.Status;
 					} else {
 						this._network.processUsers([data.Member]);
@@ -68,7 +72,7 @@ export class Group implements BaseObject {
 					}
 				}
 			} else if (data.Type === "NewPostAdded") {
-				this._network.getPosts(undefined, undefined, this.id);
+				this._network.getPosts({groupid: this.id});
 			} else if (data.Type === "Delete"){
 				delete this._network.groups[this.id];
 				this._network.onGroupsChanged();
@@ -85,7 +89,7 @@ export class Group implements BaseObject {
 					}
 				});
 				this.owner = this.members[raw.Owner];
-				this._network.getPosts(undefined, undefined, this.id, true).then(()=>{
+				this._network.getPosts({groupid: this.id, initial:true}).then(()=>{
 					res();
 				});
 			})	

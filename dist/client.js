@@ -67,7 +67,10 @@ class Client {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._network.posts[id])
                 return this._network.posts[id];
-            yield this._network.getPosts(10, parseInt(id.substring(0, 8), 16) * 1000 - 5000); //offset by 5 seconds in case the time is actually BEFORE it was posted
+            yield this._network.getPosts({
+                amount: 10,
+                before: parseInt(id.substring(0, 8), 16) * 1000 - 5000
+            }); //offset by 5 seconds in case the time is actually BEFORE it was posted
             return this._network.posts[id];
         });
     }

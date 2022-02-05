@@ -1,6 +1,8 @@
-const {WebSocket} = require("ws")
-
-let SimpleSocket = {},
+// SimpleSocket Client Library
+// ©2022 Exotek
+let SimpleSocket = {
+		remoteFunctions: {},
+	},
 	SimpleSocketAPI = {
 		SocketURL: "wss://exotek.co:32560/simplesocket/socket",
 	};
@@ -67,7 +69,7 @@ let SimpleSocket = {},
 				o();
 		});
 	}),
-	(SimpleSocketAPI.SendData = function (e, t, o, S) {
+	(SimpleSocketAPI.SendData = function (e, t, o, n) {
 		if (
 			((SimpleSocketAPI.TotalMessages += 1),
 			SimpleSocketAPI.TotalMessages > 9999 &&
@@ -75,26 +77,31 @@ let SimpleSocket = {},
 			null == t.O &&
 				(t.O =
 					e + "_" + Date.now() + "_" + SimpleSocketAPI.TotalMessages),
-			"Connect" != e && (1 != S || null != o))
+			"Connect" != e && (1 != n || null != o))
 		) {
-			let S = { OP: t.O, Task: e, Data: t };
+			let n = {
+				OP: t.O,
+				Task: e,
+				Data: t,
+			};
 			if ("Subscribe" == e && null != t.Ftr) {
 				let e = t.Ftr;
 				"object" == typeof t.Ftr && (e = JSON.stringify(e)),
 					null != t.Con && (e += JSON.stringify(t.Con)),
-					(S.Hash = SimpleSocketAPI.Hash(e));
+					(n.Hash = SimpleSocketAPI.Hash(e));
 			}
-			null != o && (S.Callback = o),
-				(SimpleSocketAPI.Operations[t.O] = S);
+			null != o && (n.Callback = o),
+				(SimpleSocketAPI.Operations[t.O] = n);
 		}
-		let n = JSON.stringify(t);
+		let S = JSON.stringify(t);
 		return (
-			1 != SimpleSocketAPI.Socket.readyState ||
+			null == SimpleSocketAPI.Socket ||
+				1 != SimpleSocketAPI.Socket.readyState ||
 				(null == SimpleSocket.ClientID && "Connect" != e) ||
-				(SimpleSocketAPI.Debug("DATA SENT: " + n),
+				(SimpleSocketAPI.Debug("DATA SENT: " + S),
 				1 == SimpleSocketAPI.SupportsETF &&
-					(n = new TextEncoder("utf-8").encode(n)),
-				SimpleSocketAPI.Socket.send(n),
+					(S = new TextEncoder("utf-8").encode(S)),
+				SimpleSocketAPI.Socket.send(S),
 				null == o &&
 					null != SimpleSocketAPI.Operations[t.O] &&
 					delete SimpleSocketAPI.Operations[t.O]),
@@ -121,9 +128,13 @@ let SimpleSocket = {},
 				);
 		let o = Object.keys(SimpleSocketAPI.Operations);
 		for (let e = 0; e < o.length; e++) {
-			let t = { ...SimpleSocketAPI.Operations[o[e]] };
-			delete SimpleSocketAPI.Operations[o[e]],
-				SimpleSocketAPI.SendData(t.Task, t.Data, t.Callback, !0);
+			let t = {
+				...SimpleSocketAPI.Operations[o[e]],
+			};
+			null != t.Data
+				? (delete SimpleSocketAPI.Operations[o[e]],
+				  SimpleSocketAPI.SendData(t.Task, t.Data, t.Callback, !0))
+				: delete SimpleSocketAPI.Operations[o[e]];
 		}
 	}),
 	(SimpleSocketAPI.RemoveSub = function (e) {
@@ -137,15 +148,14 @@ let SimpleSocket = {},
 		if (null != t.O) {
 			let e = SimpleSocketAPI.Operations[t.O];
 			if (null != e) {
-				let S = Date.now() - e[0];
-				(o = " | TOOK: " + S + " MS"),
-					(SimpleSocket.socketLatancy = S),
+				let n = Date.now() - e[0];
+				(o = " | TOOK: " + n + " MS"),
+					(SimpleSocket.socketLatancy = n),
 					null != e[2] && e[2](t.D),
-					//delete e;
-					e = undefined;
+					delete e;
 			}
 		}
-		null != t.CF && SimpleSocketAPI[t.CF](t.P),
+		null != t.CF && SimpleSocket[t.CF](t.P),
 			1 == t.Close && (SimpleSocketAPI.ExpectClose = !0),
 			SimpleSocketAPI.Debug("DATA RECIEVED: " + e + o),
 			null != t.E &&
@@ -155,7 +165,8 @@ let SimpleSocket = {},
 	(SimpleSocketAPI.Close = function () {
 		SimpleSocketAPI.Debug("CONNECTION LOST"),
 			(SimpleSocket.ClientID = null),
-			(SimpleSocket.ServerID = null);
+			(SimpleSocket.ServerID = null),
+			null != SimpleSocket.onclose && SimpleSocket.onclose();
 	}),
 	(SimpleSocketAPI.Hash = function (e) {
 		let t = 0;
@@ -181,7 +192,9 @@ let SimpleSocket = {},
 				!0
 			);
 		SimpleSocketAPI.Debug("NEW CONFIG: Config: " + JSON.stringify(e));
-		let t = { Default: e };
+		let t = {
+			Default: e,
+		};
 		SimpleSocketAPI.SendData("DefaultConfig", t),
 			(SimpleSocketAPI.DefaultConfig = t);
 	}),
@@ -200,8 +213,11 @@ let SimpleSocket = {},
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let S = { Ftr: e, Data: t };
-		null != o && (S.Con = o), SimpleSocketAPI.SendData("Publish", S);
+		let n = {
+			Ftr: e,
+			Data: t,
+		};
+		null != o && (n.Con = o), SimpleSocketAPI.SendData("Publish", n);
 	}),
 	(SimpleSocket.subscribeEvent = function (e, t, o) {
 		if (null == SimpleSocketAPI.IsConnecting)
@@ -216,21 +232,56 @@ let SimpleSocket = {},
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let S = { Ftr: e };
+		let n = {
+			Ftr: e,
+		};
 		return (
-			null != o && (S.Con = o),
-			t.length < 2 && (null == o && (S.Con = {}), (S.Con.NoConfig = !0)),
-			"FUNCTION_SubEvent:" + SimpleSocketAPI.SendData("Subscribe", S, t)
+			null != o && (n.Con = o),
+			t.length < 2 && (null == o && (n.Con = {}), (n.Con.NoConfig = !0)),
+			"FUNCTION_SubEvent:" + SimpleSocketAPI.SendData("Subscribe", n, t)
 		);
 	}),
-	(SimpleSocketAPI.Broadcast = function (e) {
-		let t = Object.keys(SimpleSocketAPI.Operations);
-		for (let o = 0; o < t.length; o++) {
-			let S = SimpleSocketAPI.Operations[t[o]];
-			null != S.Callback &&
-				S.Hash == e.Hash &&
-				S.Callback(e.Data, e.Config);
-		}
+	(SimpleSocket.Broadcast = function (e) {
+		if (null == e.Func) {
+			let t = Object.keys(SimpleSocketAPI.Operations);
+			for (let o = 0; o < t.length; o++) {
+				let n = SimpleSocketAPI.Operations[t[o]];
+				n.Hash == e.Hash &&
+					null != n.Callback &&
+					n.Callback(e.Data, e.Config);
+			}
+		} else
+			null != SimpleSocket.remoteFunctions[e.Func] &&
+				SimpleSocket.remoteFunctions[e.Func](e.Data, e.Config);
+	}),
+	(SimpleSocket.RemoteControl = function (e) {
+		if ("Sub" == e.T) {
+			let t = {
+					Ftr: e.Ftr,
+					Con: e.Con,
+				},
+				o = e.Ftr;
+			"object" == typeof e.Ftr && (o = JSON.stringify(o)),
+				null != e.Con && (o += JSON.stringify(e.Con)),
+				(t.Hash = SimpleSocketAPI.Hash(o)),
+				(t.Func = e.Func),
+				(SimpleSocketAPI.Operations["Subscribe_" + e.Func + "_Remote"] =
+					t),
+				SimpleSocketAPI.Debug(
+					"[REMOTE] SUBSCRIBING: Filter: " + JSON.stringify(e.Ftr)
+				);
+		} else
+			"CloseSub" == e.T &&
+				null !=
+					SimpleSocketAPI.Operations[
+						"Subscribe_" + e.Func + "_Remote"
+					] &&
+				(delete SimpleSocketAPI.Operations[
+					"Subscribe_" + e.Func + "_Remote"
+				],
+				SimpleSocketAPI.Debug(
+					"[REMOTE] CLOSING SUB: Function: " + e.Func
+				));
 	}),
 	(SimpleSocket.editSubscribe = function (e, t, o) {
 		if (null == SimpleSocketAPI.IsConnecting)
@@ -239,27 +290,31 @@ let SimpleSocket = {},
 				!0,
 				!0
 			);
-		let S = {};
+		let n = {};
 		if (
-			(null != t && (S.Ftr = t),
-			null != o && (S.Con = o),
-			Object.keys(S) < 1)
+			(null != t && (n.Ftr = t),
+			null != o && (n.Con = o),
+			Object.keys(n) < 1)
 		)
 			return;
-		let n = e.substring(18);
-		if (null == SimpleSocketAPI.Operations[n]) return;
-		let l = SimpleSocketAPI.Operations[n].Data,
+		let S = e.substring(18);
+		if (
+			null == SimpleSocketAPI.Operations[S] ||
+			null != SimpleSocketAPI.Operations[S].Func
+		)
+			return;
+		let l = SimpleSocketAPI.Operations[S].Data,
 			i = null,
 			c = "";
 		(c += null != t ? JSON.stringify(t) : JSON.stringify(l.Ftr)),
 			(c += null != o ? JSON.stringify(o) : JSON.stringify(l.Con)),
 			(i = SimpleSocketAPI.Hash(c)),
-			i != SimpleSocketAPI.Operations[n].Hash &&
-				((S.PrevHash = SimpleSocketAPI.Operations[n].Hash),
+			i != SimpleSocketAPI.Operations[S].Hash &&
+				((n.PrevHash = SimpleSocketAPI.Operations[S].Hash),
 				null != t &&
-					((SimpleSocketAPI.Operations[n].Data.Ftr = t),
-					(SimpleSocketAPI.Operations[n].Hash = i)),
-				null != o && (SimpleSocketAPI.Operations[n].Data.Con = o),
+					((SimpleSocketAPI.Operations[S].Data.Ftr = t),
+					(SimpleSocketAPI.Operations[S].Hash = i)),
+				null != o && (SimpleSocketAPI.Operations[S].Data.Con = o),
 				SimpleSocketAPI.Debug(
 					"EDITING SUB: Function: " +
 						e +
@@ -269,7 +324,7 @@ let SimpleSocket = {},
 						JSON.stringify(o)
 				),
 				null != SimpleSocket.ClientID &&
-					SimpleSocketAPI.SendData("EditSub", S));
+					SimpleSocketAPI.SendData("EditSub", n));
 	}),
 	(SimpleSocket.closeSubscribe = function (e) {
 		if (null == SimpleSocketAPI.IsConnecting)
@@ -280,6 +335,7 @@ let SimpleSocket = {},
 			);
 		let t = e.substring(18);
 		null != SimpleSocketAPI.Operations[t] &&
+			null == SimpleSocketAPI.Operations[t].Func &&
 			(SimpleSocketAPI.Debug("CLOSING SUBSCRIBE: ID: " + e),
 			SimpleSocketAPI.SendData("CloseSub", {
 				Hash: SimpleSocketAPI.Operations[t].Hash,
@@ -302,12 +358,13 @@ let SimpleSocket = {},
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let S = { Ftr: e, Data: t };
-		null != o && (S.Con = o),
-			SimpleSocketAPI.SendData("DisPub", S),
+		let n = {
+			Ftr: e,
+			Data: t,
+		};
+		null != o && (n.Con = o),
+			SimpleSocketAPI.SendData("DisPub", n),
 			null != e || null == SimpleSocketAPI.DisconnectEvent
-				? (SimpleSocketAPI.DisconnectEvent = S)
+				? (SimpleSocketAPI.DisconnectEvent = n)
 				: delete SimpleSocketAPI.DisconnectEvent;
 	});
-
-	module.exports = SimpleSocket;
