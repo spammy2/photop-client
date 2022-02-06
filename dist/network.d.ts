@@ -50,8 +50,9 @@ export declare class Network {
      *
      * @param rawChats RawChats
      * @param autosort Whether a post's chats should be automatically sorted afterwards
+     * DOES NOT MUTATE Post.chats. Do it yourself.
      */
-    processChats(rawChats: RawChat[], autosort?: boolean): void;
+    processChats(rawChats: RawChat[], autosort?: boolean): Chat[];
     authenticate(username: string, password: string): Promise<void>;
     onGroupsChanged(): void;
     private _init;

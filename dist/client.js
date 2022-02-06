@@ -29,13 +29,18 @@ class Client {
     constructor(credentials, configuration) {
         /**
          * Handle posts here
+         * This also hooks to posts made in other groups, unless disableGroups is set to true.
+         * If you only want to respond to global posts, do `if (!post.group)`
          * @example
          * client.onPost((post)=>{
          * 	post.chat("Hello");
          * })
          */
         this.onPost = (post) => { };
-        // may change in the future to show a Group instead of the raw invite
+        /*
+        Called when client receives an invite.
+         *
+         */
         this.onInvite = (invite) => { };
         this.onReady = () => { };
         this._network = new network_1.Network(credentials, configuration);
@@ -49,12 +54,15 @@ class Client {
             this.onReady();
         };
     }
+    /** Gets the user instance that belongs to this client */
     get user() {
         return this._network.user;
     }
+    /** Gets the client's userid */
     get userid() {
         return this._network.userid;
     }
+    /** Groups that  */
     get groups() {
         return this._network.groups;
     }
@@ -156,3 +164,4 @@ class Client {
     }
 }
 exports.Client = Client;
+//# sourceMappingURL=client.js.map

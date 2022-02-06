@@ -14,8 +14,10 @@ export enum GroupInviteType {
 export class Group implements BaseObject {
 	id: string;
 	createdAt: Date;
-	// numerical form of createdAt
 	timestamp: number;
+
+	/** TODO: implement this */
+	clientIsInGroup: boolean = true;
 	name: string;
 	members: Record<string, GroupUser> = {};
 	owner?: GroupUser;
@@ -29,9 +31,8 @@ export class Group implements BaseObject {
 	 * Used internally;
 	 */
 	readonly onReadyPromise: Promise<void>;
-	
-	onPost = (post: Post)=>{}
 
+	/** Leave this group */
 	async leave(){
 		await this._network.message("LeaveGroup", {GroupID: this.id});
 	}

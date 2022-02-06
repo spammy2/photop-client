@@ -32,7 +32,6 @@ class Post {
         this.text = (0, html_entities_1.decode)(raw.Text);
         this.chatCount = raw.Chats || 0;
         this.likes = raw.Likes || 0;
-        this.chats = [];
         this.id = raw._id;
         if (raw.GroupID) {
             this.group = this._network.groups[raw.GroupID];
@@ -42,7 +41,7 @@ class Post {
      * Useful if the client was not subscribed to messages and needs to catch up.
      * At the same time it is only for checking history.
      */
-    loadChats(before) {
+    loadChats( /*before?: number*/) {
         return __awaiter(this, void 0, void 0, function* () {
             const amount = 15;
             const query = {
@@ -50,13 +49,15 @@ class Post {
                 Amount: amount,
             };
             let loaded = [];
+            /*
             if (before) {
                 query.Before = before;
             }
+            */
             while (true) {
                 const res = yield this._network.message("GetChats", query);
-                this._network.processChats(res.Body.Chats);
-                query.Before = this.chats;
+                loaded = [...this._network.processChats(res.Body.Chats), ...loaded];
+                query.Before = loaded[0].timestamp;
                 if (amount < 15) {
                     break;
                 }
@@ -159,3 +160,4 @@ class Post {
     }
 }
 exports.Post = Post;
+//# sourceMappingURL=post.js.map

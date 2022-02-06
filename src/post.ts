@@ -8,10 +8,16 @@ import { BaseObject, DocumentObject } from "./types";
 export class Post implements BaseObject {
 	timestamp: number;
 	createdAt: Date;
+
+	/** Text of this message */
 	text: string;
+
+	/** How many likes this has. Does not update so do not use. */
 	likes: number;
+
+	/** Amount of chats this post has. More accurate than using post.chats.length */
 	chatCount: number;
-	chats: Chat[];
+	
 	id: string;
 	group?: Group;
 
@@ -28,27 +34,30 @@ export class Post implements BaseObject {
 	 * Useful if the client was not subscribed to messages and needs to catch up.
 	 * At the same time it is only for checking history.
 	 */
-	async loadChats(before?: number) {
+	async loadChats(/*before?: number*/) {
 		const amount = 15;
 		const query: any = {
 			Post: this.id,
 			Amount: amount,
 		};
 		let loaded: Chat[] = [];
+		/*
 		if (before) {
 			query.Before = before;
 		}
+		*/
 		while (true) {
 			const res = await this._network.message<{ Chats: RawChat[] }>(
 				"GetChats",
 				query
 			);
-			this._network.processChats(res.Body.Chats);
-			query.Before = this.chats;
+			loaded = [...this._network.processChats(res.Body.Chats), ...loaded];
+			query.Before = loaded[0].timestamp;
 			if (amount < 15) {
 				break;
 			}
 		}
+
 	}
 
 	onDeleted = ()=>{};
@@ -173,7 +182,6 @@ export class Post implements BaseObject {
 		this.text = decode(raw.Text);
 		this.chatCount = raw.Chats || 0;
 		this.likes = raw.Likes || 0;
-		this.chats = [];
 		this.id = raw._id;
 		if (raw.GroupID) {
 			this.group = this._network.groups[raw.GroupID];

@@ -8,9 +8,13 @@ import { Group } from "./group";
  */
 export declare class Client {
     chatDelay: number | undefined;
+    /** Gets the user instance that belongs to this client */
     get user(): import("./clientuser").ClientUser | undefined;
+    /** Gets the client's userid */
     get userid(): string | undefined;
+    /** @private The network instance that manages everything behind the scenes */
     private _network;
+    /** Groups that  */
     get groups(): Record<string, Group>;
     /**
      * @deprecated
@@ -30,6 +34,8 @@ export declare class Client {
     getUserFromUsername(name: string): Promise<User | undefined>;
     /**
      * Handle posts here
+     * This also hooks to posts made in other groups, unless disableGroups is set to true.
+     * If you only want to respond to global posts, do `if (!post.group)`
      * @example
      * client.onPost((post)=>{
      * 	post.chat("Hello");

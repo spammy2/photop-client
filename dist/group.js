@@ -20,11 +20,12 @@ var GroupInviteType;
 class Group {
     constructor(_network, raw) {
         this._network = _network;
+        /** TODO: implement this */
+        this.clientIsInGroup = true;
         this.members = {};
         this.onUserJoined = (user) => { };
         this.onUserLeft = (user) => { };
         this.onDeleted = () => { };
-        this.onPost = (post) => { };
         this.id = raw._id;
         this.createdAt = new Date(raw.Timestamp);
         this.timestamp = raw.Timestamp;
@@ -74,6 +75,7 @@ class Group {
             });
         });
     }
+    /** Leave this group */
     leave() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this._network.message("LeaveGroup", { GroupID: this.id });
@@ -94,3 +96,4 @@ class Group {
     }
 }
 exports.Group = Group;
+//# sourceMappingURL=group.js.map

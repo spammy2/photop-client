@@ -8,10 +8,7 @@ import {
 	ReqTask,
 	SocketResponse,
 } from "./types";
-import {
-	AccountData,
-	SignInAccountData,
-} from "./clientusertypes";
+import { AccountData, SignInAccountData } from "./clientusertypes";
 import { ClientUser } from "./clientuser";
 import { WebSocket } from "ws";
 import SimpleSocket from "./vendor/simplesocket";
@@ -134,11 +131,11 @@ export class Network {
 			if (!(post.id in this.posts)) {
 				this.posts[post.id] = post;
 				if (!initial) {
-					if (groupid) {
-						this.groups[groupid].onPost(post);
-					} else {
-						this.onPost(post);
-					}
+					// if (groupid) {
+					// 	this.groups[groupid].onPost(post);
+					// } else {
+					this.onPost(post);
+					// }
 				}
 			}
 		}
@@ -163,8 +160,8 @@ export class Network {
 		if (this.postUpdateSub) {
 			this.simpleSocket.editSubscribe(this.postUpdateSub, {
 				Task: "PostUpdate",
-				_id: Array.from(this.connectedPosts)
-			})
+				_id: Array.from(this.connectedPosts),
+			});
 		}
 		const response = await this.message<{
 			Chats: RawChat[];
@@ -178,7 +175,6 @@ export class Network {
 
 		this.processUsers(response.Body.Users);
 		this.processChats(response.Body.Chats);
-		
 	}
 
 	async disconnectChat(postid: string) {
@@ -284,9 +280,10 @@ export class Network {
 	 *
 	 * @param rawChats RawChats
 	 * @param autosort Whether a post's chats should be automatically sorted afterwards
+	 * DOES NOT MUTATE Post.chats. Do it yourself.
 	 */
 	processChats(rawChats: RawChat[], autosort = true) {
-		const toSort = new Set<string>();
+		const processed: Chat[] = [];
 		for (const rawChat of rawChats) {
 			if (rawChat._id in this.chats) {
 				this.chats[rawChat._id].update(rawChat);
@@ -298,12 +295,10 @@ export class Network {
 					rawChat
 				);
 
-				// .push() is not a good idea since the added chats may be before the last
-				// to mitigate this we sort if each time, but an option "autosort" is provided to ignore this
-				toSort.add(rawChat.PostID);
-				this.posts[rawChat.PostID].chats.push(chat);
+				//this.posts[rawChat.PostID].chats.push(chat);
 				this.chats[rawChat._id] = chat;
 			}
+			processed.push(this.chats[rawChat._id]);
 		}
 		//we do it again because some of the chats may be registered before the ones they are replying to are
 		for (const rawChat of rawChats) {
@@ -311,13 +306,7 @@ export class Network {
 				this.chats[rawChat._id].replyTo = this.chats[rawChat.ReplyID];
 			}
 		}
-		if (autosort) {
-			toSort.forEach((id) => {
-				this.posts[id].chats.sort((a, b) => {
-					return a.timestamp - b.timestamp;
-				});
-			});
-		}
+		return processed;
 	}
 
 	async authenticate(username: string, password: string) {
@@ -331,10 +320,15 @@ export class Network {
 		this.userid = response.Body.UserID;
 		this.authtoken = response.Body.Token;
 		this.user = ClientUser.FromSignIn(this, response.Body);
-		
+
 		if (!this.config?.disableGroups) {
-			for (const [groupid, rawGroup] of Object.entries(response.Body.Groups)) {
-				this.groups[groupid] = new Group(this, {...rawGroup, _id: groupid});
+			for (const [groupid, rawGroup] of Object.entries(
+				response.Body.Groups
+			)) {
+				this.groups[groupid] = new Group(this, {
+					...rawGroup,
+					_id: groupid,
+				});
 				await this.groups[groupid].onReadyPromise;
 			}
 		}
@@ -416,28 +410,34 @@ export class Network {
 
 		//this.profileUpdate = this.simpleSocket.subscribeEvent()
 
-		this.postUpdateSub = this.simpleSocket.subscribeEvent<{
-			Type: "LikeCounter",
-			_id: string,
-			Change: number,
-		} | {
-			Type: "DeletePost",
-			_id: string,
-		}>({
-			Task: "PostUpdate",
-			_id: Array.from(this.connectedPosts), //which is an empty array
-		}, (Data)=>{
-			if (Data.Type === "LikeCounter") {
-				// this is literally unusable because it is impossible to tell
-				// maybe i can call some event on post.likesChanged
-			} else if (Data.Type === "DeletePost") {
-				this.posts[Data._id].onDeleted();
-				for (const chat of this.posts[Data._id].chats) {
-					delete this.chats[chat.id];
+		this.postUpdateSub = this.simpleSocket.subscribeEvent<
+			| {
+					Type: "LikeCounter";
+					_id: string;
+					Change: number;
+			  }
+			| {
+					Type: "DeletePost";
+					_id: string;
+			  }
+		>(
+			{
+				Task: "PostUpdate",
+				_id: Array.from(this.connectedPosts), //which is an empty array
+			},
+			(Data) => {
+				if (Data.Type === "LikeCounter") {
+					// this is literally unusable because it is impossible to tell
+					// maybe i can call some event on post.likesChanged
+				} else if (Data.Type === "DeletePost") {
+					// this.posts[Data._id].onDeleted();
+					// for (const chat of this.posts[Data._id].chats) {
+					// 	delete this.chats[chat.id];
+					// }
+					// delete this.posts[Data._id];
 				}
-				delete this.posts[Data._id];
 			}
-		})
+		);
 
 		this.generalUpdateSub = this.simpleSocket.subscribeEvent<{
 			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
@@ -462,6 +462,8 @@ export class Network {
 
 					//this.newPosts[NewPostData._id] = true;
 					this.getPosts({ groupid: NewPostData.GroupID });
+				} else if (Data.Type === "LeaveGroup") {
+				} else if (Data.Type === "JoinGroup") {
 				}
 			}
 		);
@@ -469,7 +471,10 @@ export class Network {
 	}
 
 	private reqid = 0;
-	message<Body>(task: ReqTask, body?: Record<string, undefined | string | number | Array<any>>): Promise<SocketResponse<Body>> {
+	message<Body>(
+		task: ReqTask,
+		body?: Record<string, undefined | string | number | Array<any>>
+	): Promise<SocketResponse<Body>> {
 		return new Promise((res, rej) => {
 			const message = {
 				Body: body,
@@ -541,19 +546,15 @@ export class Network {
 
 				this.processChats(Chats);
 				for (const rawChat of Chats) {
-					this.posts[rawChat.PostID]._onChat(
-						this.chats[rawChat._id]
-					);
+					this.posts[rawChat.PostID]._onChat(this.chats[rawChat._id]);
 				}
 			} else if (Body.Type == "DeleteChat") {
 				for (const chatId of Body.ChatIDs) {
-					const post = this.chats[chatId].post;
-					post.chats.splice(post.chats.indexOf(this.chats[chatId], 1))
 					this.chats[chatId].onDeleted();
 					delete this.chats[chatId];
 				}
 			}
-		}
+		};
 		// restart socket if it somehow closes
 		this.socket.onclose = () => {
 			this.socket = new WebSocket(SOCKET_URL);
@@ -584,9 +585,7 @@ export class Network {
 					// 		Users: RawUser[];
 					// 	}>
 					// ).Body;
-
 					// this.processUsers(Users);
-
 					// this.processChats(Chats);
 					// for (const rawChat of Chats) {
 					// 	this.posts[rawChat.PostID]._onChat(

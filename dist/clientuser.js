@@ -28,3 +28,4 @@ class ClientUser extends user_1.User {
     }
 }
 exports.ClientUser = ClientUser;
+//# sourceMappingURL=clientuser.js.map

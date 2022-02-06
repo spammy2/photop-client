@@ -8,6 +8,7 @@ class Chat {
         this.user = user;
         this.post = post;
         this.raw = raw;
+        /** Called when it has been detected that this chat is deleted. */
         this.onDeleted = () => { };
         this.createdAt = new Date(raw.Timestamp);
         this.timestamp = raw.Timestamp;
@@ -19,6 +20,7 @@ class Chat {
         }
     }
     /**
+     * @private
      * Update is for when some values are unknown at instantiation time
      */
     update(raw) {
@@ -28,9 +30,11 @@ class Chat {
         this.id = raw._id;
         this.text = (0, html_entities_1.decode)(raw.Text);
     }
+    /** Replies to a specific chat message */
     reply(text) {
         var _a;
         this._network.reply(text, this.post.id, this.id, (_a = this.group) === null || _a === void 0 ? void 0 : _a.id);
     }
 }
 exports.Chat = Chat;
+//# sourceMappingURL=chat.js.map

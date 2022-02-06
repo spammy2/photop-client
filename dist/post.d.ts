@@ -9,10 +9,12 @@ export declare class Post implements BaseObject {
     author: User;
     timestamp: number;
     createdAt: Date;
+    /** Text of this message */
     text: string;
+    /** How many likes this has. Does not update so do not use. */
     likes: number;
+    /** Amount of chats this post has. More accurate than using post.chats.length */
     chatCount: number;
-    chats: Chat[];
     id: string;
     group?: Group;
     usersLiked: {
@@ -28,7 +30,7 @@ export declare class Post implements BaseObject {
      * Useful if the client was not subscribed to messages and needs to catch up.
      * At the same time it is only for checking history.
      */
-    loadChats(before?: number): Promise<void>;
+    loadChats(): Promise<void>;
     onDeleted: () => void;
     _onChat(chat: Chat): void;
     /**

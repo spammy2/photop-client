@@ -17,15 +17,20 @@ import { RawUser } from "./usertypes";
 export class Client {
 	chatDelay: number | undefined;
 
+	/** Gets the user instance that belongs to this client */
 	get user() {
 		return this._network.user;
 	}
+
+	/** Gets the client's userid */
 	get userid() {
 		return this._network.userid;
 	}
 
+	/** @private The network instance that manages everything behind the scenes */
 	private _network: Network;
 
+	/** Groups that  */
 	get groups() {
 		return this._network.groups;
 	}
@@ -113,6 +118,8 @@ export class Client {
 
 	/**
 	 * Handle posts here
+	 * This also hooks to posts made in other groups, unless disableGroups is set to true.
+	 * If you only want to respond to global posts, do `if (!post.group)`
 	 * @example
 	 * client.onPost((post)=>{
 	 * 	post.chat("Hello");
@@ -120,7 +127,10 @@ export class Client {
 	 */
 	onPost = (post: Post) => {};
 
-	// may change in the future to show a Group instead of the raw invite
+	/*
+	Called when client receives an invite.
+	 * 
+	 */
 	onInvite = (invite: GroupInviteData) => {};
 
 	onReady = () => {};

@@ -31,3 +31,4 @@ class GroupUser {
     }
 }
 exports.GroupUser = GroupUser;
+//# sourceMappingURL=groupuser.js.map

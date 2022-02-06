@@ -59,8 +59,6 @@ class Network {
             }
             else if (Body.Type == "DeleteChat") {
                 for (const chatId of Body.ChatIDs) {
-                    const post = this.chats[chatId].post;
-                    post.chats.splice(post.chats.indexOf(this.chats[chatId], 1));
                     this.chats[chatId].onDeleted();
                     delete this.chats[chatId];
                 }
@@ -161,12 +159,11 @@ class Network {
                 if (!(post.id in this.posts)) {
                     this.posts[post.id] = post;
                     if (!initial) {
-                        if (groupid) {
-                            this.groups[groupid].onPost(post);
-                        }
-                        else {
-                            this.onPost(post);
-                        }
+                        // if (groupid) {
+                        // 	this.groups[groupid].onPost(post);
+                        // } else {
+                        this.onPost(post);
+                        // }
                     }
                 }
             }
@@ -190,7 +187,7 @@ class Network {
             if (this.postUpdateSub) {
                 this.simpleSocket.editSubscribe(this.postUpdateSub, {
                     Task: "PostUpdate",
-                    _id: Array.from(this.connectedPosts)
+                    _id: Array.from(this.connectedPosts),
                 });
             }
             const response = yield this.message("ConnectLiveChat", {
@@ -285,21 +282,20 @@ class Network {
      *
      * @param rawChats RawChats
      * @param autosort Whether a post's chats should be automatically sorted afterwards
+     * DOES NOT MUTATE Post.chats. Do it yourself.
      */
     processChats(rawChats, autosort = true) {
-        const toSort = new Set();
+        const processed = [];
         for (const rawChat of rawChats) {
             if (rawChat._id in this.chats) {
                 this.chats[rawChat._id].update(rawChat);
             }
             else {
                 const chat = new chat_1.Chat(this, this.users[rawChat.UserID], this.posts[rawChat.PostID], rawChat);
-                // .push() is not a good idea since the added chats may be before the last
-                // to mitigate this we sort if each time, but an option "autosort" is provided to ignore this
-                toSort.add(rawChat.PostID);
-                this.posts[rawChat.PostID].chats.push(chat);
+                //this.posts[rawChat.PostID].chats.push(chat);
                 this.chats[rawChat._id] = chat;
             }
+            processed.push(this.chats[rawChat._id]);
         }
         //we do it again because some of the chats may be registered before the ones they are replying to are
         for (const rawChat of rawChats) {
@@ -307,13 +303,7 @@ class Network {
                 this.chats[rawChat._id].replyTo = this.chats[rawChat.ReplyID];
             }
         }
-        if (autosort) {
-            toSort.forEach((id) => {
-                this.posts[id].chats.sort((a, b) => {
-                    return a.timestamp - b.timestamp;
-                });
-            });
-        }
+        return processed;
     }
     authenticate(username, password) {
         var _a;
@@ -400,11 +390,11 @@ class Network {
                     // maybe i can call some event on post.likesChanged
                 }
                 else if (Data.Type === "DeletePost") {
-                    this.posts[Data._id].onDeleted();
-                    for (const chat of this.posts[Data._id].chats) {
-                        delete this.chats[chat.id];
-                    }
-                    delete this.posts[Data._id];
+                    // this.posts[Data._id].onDeleted();
+                    // for (const chat of this.posts[Data._id].chats) {
+                    // 	delete this.chats[chat.id];
+                    // }
+                    // delete this.posts[Data._id];
                 }
             });
             this.generalUpdateSub = this.simpleSocket.subscribeEvent({
@@ -417,6 +407,10 @@ class Network {
                     const NewPostData = Data.NewPostData;
                     //this.newPosts[NewPostData._id] = true;
                     this.getPosts({ groupid: NewPostData.GroupID });
+                }
+                else if (Data.Type === "LeaveGroup") {
+                }
+                else if (Data.Type === "JoinGroup") {
                 }
             });
             this.onReady();
@@ -463,3 +457,4 @@ class Network {
     }
 }
 exports.Network = Network;
+//# sourceMappingURL=network.js.map

@@ -12,6 +12,8 @@ export declare class Group implements BaseObject {
     id: string;
     createdAt: Date;
     timestamp: number;
+    /** TODO: implement this */
+    clientIsInGroup: boolean;
     name: string;
     members: Record<string, GroupUser>;
     owner?: GroupUser;
@@ -24,7 +26,7 @@ export declare class Group implements BaseObject {
      * Used internally;
      */
     readonly onReadyPromise: Promise<void>;
-    onPost: (post: Post) => void;
+    /** Leave this group */
     leave(): Promise<void>;
     delete(): Promise<void>;
     /**

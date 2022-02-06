@@ -12,13 +12,18 @@ export declare class Chat implements BaseObject {
     createdAt: Date;
     id: string;
     text: string;
+    /** The chat this this chat is replying to. */
     replyTo?: Chat;
+    /** The group that this chat is part of. Undefined if not part of any group. */
     group?: Group;
     /**
+     * @private
      * Update is for when some values are unknown at instantiation time
      */
     update(raw: RawChat): void;
+    /** Replies to a specific chat message */
     reply(text: string): void;
+    /** Called when it has been detected that this chat is deleted. */
     onDeleted: () => void;
     constructor(_network: Network, user: User, post: Post, raw: RawChat, replyTo?: Chat);
 }

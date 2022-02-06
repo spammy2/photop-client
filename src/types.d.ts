@@ -88,8 +88,13 @@ export interface SocketResponse<body> {
 }
 
 export interface BaseObject {
+	/** The ID of this object. */
 	id: string;
+
+	/** When this object was created as a number */
 	timestamp: number;
+
+	/** When this object was created as a Date */
 	createdAt: Date;
 }
 
