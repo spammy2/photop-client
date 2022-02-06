@@ -40,7 +40,7 @@ exports.__esModule = true;
 var __1 = require("..");
 var dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
-var client = new __1.Client({ username: process.env.USERNAME, password: process.env.PASSWORD }, { logSocketMessages: false });
+var client = new __1.Client({ username: process.env.USERNAME, password: process.env.PASSWORD }, { logSocketMessages: true });
 var help = {
     like: "Likes a post",
     unlike: "Unlike a post",

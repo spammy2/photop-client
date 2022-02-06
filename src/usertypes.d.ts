@@ -5,6 +5,9 @@ export type ProfileVisibility = "Public" | "Private" | "Following"
 
 export type UpdateUserProps = Omit<UserProps, "timestamp" | "id">
 
+type Social = {
+	// TODO
+}
 export interface UserProps {
 	timestamp: number,
 	id: string,
@@ -13,6 +16,9 @@ export interface UserProps {
 	following?: number,
 	username: string,
 	roles: Role[],
+	description?: string;
+	bannerUrl?: string;
+	socials: Social[]
 }
 
 type social = "youtube" | "discord" | "twitter" | "twitch" | "github" | "instagram" | "reddit" | "pinterest";

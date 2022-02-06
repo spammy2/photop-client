@@ -35,10 +35,15 @@ class Client {
          * })
          */
         this.onPost = (post) => { };
+        // may change in the future to show a Group instead of the raw invite
+        this.onInvite = (invite) => { };
         this.onReady = () => { };
         this._network = new network_1.Network(credentials, configuration);
         this._network.onPost = (post) => {
             this.onPost(post);
+        };
+        this._network.onInvite = (invite) => {
+            this.onInvite(invite);
         };
         this._network.onReady = () => {
             this.onReady();
@@ -69,22 +74,27 @@ class Client {
                 return this._network.posts[id];
             yield this._network.getPosts({
                 amount: 10,
-                before: parseInt(id.substring(0, 8), 16) * 1000 - 5000
+                before: parseInt(id.substring(0, 8), 16) * 1000 - 5000,
             }); //offset by 5 seconds in case the time is actually BEFORE it was posted
             return this._network.posts[id];
         });
     }
     /**
-     * The short group id that is used for invitations.
+     * The short group id that is used for invitations OR the group id itself.
      * @returns Group; errors if already in group.
      */
-    joinGroup(groupinviteid) {
+    joinGroup(groupid) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const id = (yield this._network.message("InviteUpdate", { Task: "Join", GroupID: groupinviteid })).Body.GroupID;
-            if ((_a = this._network.groups[id]) === null || _a === void 0 ? void 0 : _a.members[this.userid]) /* return;*/
-                throw new Error("already in group");
-            const rawGroup = (yield this._network.message("GetGroups", { GroupID: id })).Body.Group;
+            const id = (yield this._network.message("InviteUpdate", {
+                Task: "Join",
+                GroupID: groupid,
+            })).Body.GroupID;
+            if ((_a = this._network.groups[id]) === null || _a === void 0 ? void 0 : _a.members[this.userid])
+                /* return;*/ throw new Error("already in group");
+            const rawGroup = (yield this._network.message("GetGroups", {
+                GroupID: id,
+            })).Body.Group;
             this._network.groups[rawGroup._id] = new group_1.Group(this._network, rawGroup);
             this._network.onGroupsChanged();
             return this._network.groups[rawGroup._id];
@@ -100,7 +110,7 @@ class Client {
                 console.log("fetch to photoprest resulted in error");
             }));
             if (data.user) {
-                return new user_1.User(this._network, data.user);
+                return user_1.User.FromRaw(this._network, data.user);
             }
         });
     }

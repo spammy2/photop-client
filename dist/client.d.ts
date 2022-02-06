@@ -1,5 +1,5 @@
 import { Post } from "./post";
-import { ClientConfiguration, ClientCredentials } from "./types";
+import { ClientConfiguration, ClientCredentials, GroupInviteData } from "./types";
 import { User } from "./user";
 import { Group } from "./group";
 /**
@@ -8,7 +8,7 @@ import { Group } from "./group";
  */
 export declare class Client {
     chatDelay: number | undefined;
-    get user(): import("./user").ClientUser | undefined;
+    get user(): import("./clientuser").ClientUser | undefined;
     get userid(): string | undefined;
     private _network;
     get groups(): Record<string, Group>;
@@ -22,10 +22,10 @@ export declare class Client {
      */
     getPost(id: string): Promise<Post | undefined>;
     /**
-     * The short group id that is used for invitations.
+     * The short group id that is used for invitations OR the group id itself.
      * @returns Group; errors if already in group.
      */
-    joinGroup(groupinviteid: string): Promise<Group>;
+    joinGroup(groupid: string): Promise<Group>;
     getUser(id: string): Promise<User | undefined>;
     getUserFromUsername(name: string): Promise<User | undefined>;
     /**
@@ -36,6 +36,7 @@ export declare class Client {
      * })
      */
     onPost: (post: Post) => void;
+    onInvite: (invite: GroupInviteData) => void;
     onReady: () => void;
     /**
      * Create a post with text. Images do not seem to work at the present.

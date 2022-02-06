@@ -18,6 +18,7 @@ export class ClientUser extends User {
 
 	static FromSignIn(network: Network, raw: SignInAccountData) {
 		return new ClientUser(network, {
+			socials: this.ConvertSocials(raw.ProfileData.Socials),
 			email: raw.Email,
 			roles: this.NormalizeRoles(raw.Role),
 			timestamp: parseInt(raw.UserID.substring(0, 8), 16) * 1000,

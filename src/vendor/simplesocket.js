@@ -1,3 +1,5 @@
+const {WebSocket} = require("ws")
+
 // SimpleSocket Client Library
 // ©2022 Exotek
 let SimpleSocket = {
@@ -368,3 +370,6 @@ let SimpleSocket = {
 				? (SimpleSocketAPI.DisconnectEvent = n)
 				: delete SimpleSocketAPI.DisconnectEvent;
 	});
+
+
+module.exports = SimpleSocket;

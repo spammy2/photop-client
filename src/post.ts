@@ -51,6 +51,8 @@ export class Post implements BaseObject {
 		}
 	}
 
+	onDeleted = ()=>{};
+
 	_onChat(chat: Chat) {
 		if (this._connected) {
 			this.onChat(chat);

@@ -23,9 +23,12 @@ export class Group implements BaseObject {
 	inviteType: GroupInviteType;
 	onUserJoined = (user: GroupUser)=>{};
 	onUserLeft = (user: GroupUser)=>{};
-	onDelete = ()=>{};
+	onDeleted = ()=>{};
 	
-	onReadyPromise: Promise<void>;
+	/**
+	 * Used internally;
+	 */
+	readonly onReadyPromise: Promise<void>;
 	
 	onPost = (post: Post)=>{}
 
@@ -76,7 +79,7 @@ export class Group implements BaseObject {
 			} else if (data.Type === "Delete"){
 				delete this._network.groups[this.id];
 				this._network.onGroupsChanged();
-				this.onDelete();
+				this.onDeleted();
 			}
 		})
 

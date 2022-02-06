@@ -3,7 +3,8 @@ export interface SimpleSocket {
 	editSubscribe(subid: string, query: SubscriptionQuery): void;
 	connect(details: {project_id: string, client_token: string}): Promise<void>;
 	debug: boolean,
-	remoteFunctions: Record<string, (body: any)=>void>
+	remoteFunctions: Record<string, (body: any)=>void>,
+	ClientID: string,
 }
 
 type SubscriptionQuery = {

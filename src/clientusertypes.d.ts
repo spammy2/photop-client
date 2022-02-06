@@ -1,4 +1,5 @@
-import { Role, UserProps, RawUser, RawUserSettings } from "./usertypes";
+import { RawGroup } from "./group";
+import { Role, UserProps, RawUser, RawUserSettings, ProfileData } from "./usertypes";
 
 export type UpdateClientUserProps = Omit<ClientUserProps, "timestamp" | "id">
 
@@ -22,13 +23,14 @@ export interface SignInAccountData {
 	Role: Role[] | Role;
 	BlockedUsers: RawUser[];
 	Email: string;
-	ProfileData: { Following: number; Followers: number, Visibility: "Public" | "Private" | "Following" };
+	ProfileData: ProfileData,
 	RealUser: string;
 	Settings: RawClientUserSettings;
 	Token: string;
 	TokenExpiresDuration: number;
 	TokenExpires: number;
 	UserID: string;
+	Groups: RawGroup[]
 }
 
 export interface RawClientUserSettings extends RawUserSettings {

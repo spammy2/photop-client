@@ -8,6 +8,7 @@ export declare class Chat implements BaseObject {
     user: User;
     post: Post;
     raw: RawChat;
+    timestamp: number;
     createdAt: Date;
     id: string;
     text: string;
@@ -18,6 +19,7 @@ export declare class Chat implements BaseObject {
      */
     update(raw: RawChat): void;
     reply(text: string): void;
+    onDeleted: () => void;
     constructor(_network: Network, user: User, post: Post, raw: RawChat, replyTo?: Chat);
 }
 export interface RawChat extends DocumentObject {

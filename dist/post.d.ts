@@ -2,11 +2,12 @@ import { User } from ".";
 import { Chat } from "./chat";
 import { Group } from "./group";
 import { Network } from "./network";
-import { DocumentObject } from "./types";
-export declare class Post {
+import { BaseObject, DocumentObject } from "./types";
+export declare class Post implements BaseObject {
     private _network;
-    raw: RawPost;
+    private raw;
     author: User;
+    timestamp: number;
     createdAt: Date;
     text: string;
     likes: number;
@@ -23,6 +24,12 @@ export declare class Post {
     }[];
     private _connected;
     private _currentConnection;
+    /**
+     * Useful if the client was not subscribed to messages and needs to catch up.
+     * At the same time it is only for checking history.
+     */
+    loadChats(before?: number): Promise<void>;
+    onDeleted: () => void;
     _onChat(chat: Chat): void;
     /**
      * Subscribe to when a chat is made. Use `Post.connect()` before subscribing.

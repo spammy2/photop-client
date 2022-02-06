@@ -39,7 +39,7 @@ export class Network {
 
 	authtoken?: string;
 	userid?: string;
-	connectedChats = new Set<string>();
+	connectedPosts = new Set<string>();
 
 	user?: ClientUser;
 
@@ -159,30 +159,30 @@ export class Network {
 	}
 
 	async connectChat(postid: string) {
-		this.connectedChats.add(postid);
+		this.connectedPosts.add(postid);
 		if (this.postUpdateSub) {
 			this.simpleSocket.editSubscribe(this.postUpdateSub, {
 				Task: "PostUpdate",
-				_id: Array.from(this.connectedChats)
+				_id: Array.from(this.connectedPosts)
 			})
 		}
-		// no idea why they are separate but not something we care about
-		// const response = await this.message<{
-		// 	Chats: RawChat[];
-		// 	Users: RawUser[];
-		// }>("ConnectLiveChat", {
-		// 	Amount: 25,
-		// 	Posts: this.connectedChats,
-		// 	ChatPosts: this.connectedChats,
-		// });
+		const response = await this.message<{
+			Chats: RawChat[];
+			Users: RawUser[];
+		}>("ConnectLiveChat", {
+			SimpleSocketID: this.simpleSocket.ClientID,
+			Amount: 25,
+			Posts: Array.from(this.connectedPosts),
+			ChatPosts: Array.from(this.connectedPosts),
+		});
 
-		// this.processUsers(response.Body.Users);
-		// this.processChats(response.Body.Chats);
+		this.processUsers(response.Body.Users);
+		this.processChats(response.Body.Chats);
 		
 	}
 
 	async disconnectChat(postid: string) {
-		this.connectedChats.delete(postid);
+		this.connectedPosts.delete(postid);
 	}
 
 	processUsers(rawUsers: RawUser[]) {
@@ -331,6 +331,14 @@ export class Network {
 		this.userid = response.Body.UserID;
 		this.authtoken = response.Body.Token;
 		this.user = ClientUser.FromSignIn(this, response.Body);
+		
+		if (!this.config?.disableGroups) {
+			for (const [groupid, rawGroup] of Object.entries(response.Body.Groups)) {
+				this.groups[groupid] = new Group(this, {...rawGroup, _id: groupid});
+				await this.groups[groupid].onReadyPromise;
+			}
+		}
+
 		if (this.generalUpdateSub) {
 			this.simpleSocket.editSubscribe(this.generalUpdateSub, {
 				Task: "GeneralUpdate",
@@ -383,26 +391,28 @@ export class Network {
 		await this.getPosts({ initial: true });
 
 		if (this.config?.disableGroups !== true) {
-			const getGroupsResponse = await this.message<{
-				Invites: string[];
-				Groups: RawGroup[];
-				JoinedArr: RawGroupJoin[];
-				Owners: RawGroupUser[];
-			}>("GetGroups", {});
+			this.groupInvitesSub = this.simpleSocket.subscribeEvent(
+				{ Task: "NewGroupInvite", UserID: this.userid },
+				(Data: GroupInviteData) => {
+					this.onInvite(Data);
+				}
+			);
+			if (credentials && "token" in credentials) {
+				const getGroupsResponse = await this.message<{
+					Invites: string[];
+					Groups: RawGroup[];
+					JoinedArr: RawGroupJoin[];
+					Owners: RawGroupUser[];
+				}>("GetGroups", {});
 
-			// Body.Owners is unnecessary because we are already fetching the members of the group;
-			this.processUsers(getGroupsResponse.Body.Owners);
-			for (const rawGroup of getGroupsResponse.Body.Groups) {
-				this.groups[rawGroup._id] = new Group(this, rawGroup);
-				await this.groups[rawGroup._id].onReadyPromise;
+				// Body.Owners is unnecessary because we are already fetching the members of the group;
+				// this.processUsers(getGroupsResponse.Body.Owners);
+				for (const rawGroup of getGroupsResponse.Body.Groups) {
+					this.groups[rawGroup._id] = new Group(this, rawGroup);
+					await this.groups[rawGroup._id].onReadyPromise;
+				}
 			}
 		}
-		this.groupInvitesSub = this.simpleSocket.subscribeEvent(
-			{ Task: "NewGroupInvite", UserID: this.userid },
-			(Data: GroupInviteData) => {
-				this.onInvite(Data);
-			}
-		);
 
 		//this.profileUpdate = this.simpleSocket.subscribeEvent()
 
@@ -412,16 +422,20 @@ export class Network {
 			Change: number,
 		} | {
 			Type: "DeletePost",
-
+			_id: string,
 		}>({
 			Task: "PostUpdate",
-			_id: Array.from(this.connectedChats), //which is an empty array
+			_id: Array.from(this.connectedPosts), //which is an empty array
 		}, (Data)=>{
 			if (Data.Type === "LikeCounter") {
 				// this is literally unusable because it is impossible to tell
 				// maybe i can call some event on post.likesChanged
 			} else if (Data.Type === "DeletePost") {
-
+				this.posts[Data._id].onDeleted();
+				for (const chat of this.posts[Data._id].chats) {
+					delete this.chats[chat.id];
+				}
+				delete this.posts[Data._id];
 			}
 		})
 
@@ -455,7 +469,7 @@ export class Network {
 	}
 
 	private reqid = 0;
-	message<Body>(task: ReqTask, body?: any): Promise<SocketResponse<Body>> {
+	message<Body>(task: ReqTask, body?: Record<string, undefined | string | number | Array<any>>): Promise<SocketResponse<Body>> {
 		return new Promise((res, rej) => {
 			const message = {
 				Body: body,
@@ -518,12 +532,10 @@ export class Network {
 		this.simpleSocket.debug = this.config?.logSocketMessages ?? false;
 		this.simpleSocket.remoteFunctions.PostStream = (Body) => {
 			if (Body.Type == "NewChat") {
-				const { Users, Chats } = (
-					Body as SocketResponse<{
-						Chats: RawChat[];
-						Users: RawUser[];
-					}>
-				).Body;
+				const { Users, Chats } = Body as {
+					Chats: RawChat[];
+					Users: RawUser[];
+				};
 
 				this.processUsers(Users);
 

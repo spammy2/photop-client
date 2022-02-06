@@ -11,15 +11,19 @@ export declare class Group implements BaseObject {
     private _network;
     id: string;
     createdAt: Date;
+    timestamp: number;
     name: string;
     members: Record<string, GroupUser>;
     owner?: GroupUser;
     icon?: string;
-    invite: GroupInviteType;
+    inviteType: GroupInviteType;
     onUserJoined: (user: GroupUser) => void;
     onUserLeft: (user: GroupUser) => void;
-    onDelete: () => void;
-    onReadyPromise: Promise<void>;
+    onDeleted: () => void;
+    /**
+     * Used internally;
+     */
+    readonly onReadyPromise: Promise<void>;
     onPost: (post: Post) => void;
     leave(): Promise<void>;
     delete(): Promise<void>;

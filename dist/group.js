@@ -23,13 +23,14 @@ class Group {
         this.members = {};
         this.onUserJoined = (user) => { };
         this.onUserLeft = (user) => { };
-        this.onDelete = () => { };
+        this.onDeleted = () => { };
         this.onPost = (post) => { };
         this.id = raw._id;
         this.createdAt = new Date(raw.Timestamp);
+        this.timestamp = raw.Timestamp;
         this.name = raw.Name;
         this.icon = raw.Icon;
-        this.invite = GroupInviteType[raw.Invite];
+        this.inviteType = GroupInviteType[raw.Invite];
         this._network.simpleSocket.subscribeEvent({ Task: "GroupUpdate", GroupID: this.id }, (data) => {
             if (data.Type === "MemberUpdate") {
                 if (data.Member.Status === -1) {
@@ -39,7 +40,7 @@ class Group {
                 }
                 else {
                     if (this.members[data.Member._id]) {
-                        this.members[data.Member._id].user.update(data.Member);
+                        this.members[data.Member._id].user.updateRaw(data.Member);
                         this.members[data.Member._id].status = data.Member.Status;
                     }
                     else {
@@ -55,7 +56,7 @@ class Group {
             else if (data.Type === "Delete") {
                 delete this._network.groups[this.id];
                 this._network.onGroupsChanged();
-                this.onDelete();
+                this.onDeleted();
             }
         });
         this.onReadyPromise = new Promise((res, rej) => {

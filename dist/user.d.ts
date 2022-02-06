@@ -1,14 +1,21 @@
 import { Chat } from "./chat";
 import { Post } from "./post";
 import { Network } from "./network";
-import { BaseObject, DocumentObject } from "./types";
+import { BaseObject } from "./types";
+import { ProfileData, RawUser, Role, Social, UpdateUserProps, UserProps } from "./usertypes";
 export declare class User implements BaseObject {
     protected _network: Network;
     createdAt: Date;
+    timestamp: number;
     id: string;
     avatarUrl?: string;
     username: string;
     roles: Role[];
+    following?: number;
+    followers?: number;
+    profileIsVisible: unknown;
+    bannerUrl?: string;
+    description?: string;
     private _clientUserIsFollowing?;
     /**
      * Looks up a user's post history, looks up from newest to oldest.
@@ -21,73 +28,17 @@ export declare class User implements BaseObject {
     getChats(): Promise<Chat[]>;
     follow(): Promise<boolean>;
     unfollow(): Promise<boolean>;
-    following: User[];
+    followingList: User[];
     private _isLoadingFollowingUsers;
     loadFollowingUsers(): Promise<void>;
     /**
      * @private Used for updating the details when they update ex: username after the initial creation
      */
-    update(raw: RawUser): void;
-    constructor(_network: Network, /* public */ raw: RawUser);
+    updateRaw(raw: RawUser): void;
+    update({ avatarUrl, followers, following, roles }: UpdateUserProps): void;
+    static ConvertSocials(socials: ProfileData["Socials"]): Social[];
+    static GetUserPropsFromRaw(raw: RawUser): UserProps;
+    static FromRaw(network: Network, raw: RawUser): User;
+    static NormalizeRoles(role: Role[] | Role | undefined): Role[];
+    constructor(_network: Network, { timestamp, id, avatarUrl, followers, following, roles, username }: UserProps);
 }
-export declare class ClientUser extends User {
-    raw: AccountData | SignInAccountData;
-    email: string;
-    updateClient(raw: AccountData | SignInAccountData): void;
-    constructor(network: Network, raw: AccountData | SignInAccountData);
-}
-export interface RawUser extends DocumentObject {
-    CreationTime?: number;
-    Role?: Role[];
-    User: string;
-    Settings?: RawUserSettings;
-}
-export interface RawUserSettings {
-    ProfilePic?: string;
-}
-/** Account data returned from GetAccountData */
-export interface AccountData extends RawUser {
-    Email: string;
-    LastImportantUpdate: number;
-    LastLogin: number;
-    Logins: number;
-    ProfileData: {
-        Visibility: "Private";
-    } | {
-        Visibility: "Public";
-        Description: string;
-        Following: number;
-        Followers: number;
-    };
-    Settings: RawClientUserSettings;
-    ViewingGroupID?: number;
-}
-/** Account data returned from SignInAccount */
-export interface SignInAccountData {
-    Role: Role[] | Role;
-    BlockedUsers: RawUser[];
-    Email: string;
-    ProfileData: {
-        Following: number;
-        Followers: number;
-    };
-    RealUser: string;
-    Settings: RawClientUserSettings;
-    Token: string;
-    TokenExpiresDuration: number;
-    TokenExpires: number;
-    UserID: string;
-}
-export interface RawClientUserSettings extends RawUserSettings {
-    Display: {
-        "Embed GIFs": boolean;
-        "Embed Scratch Games": boolean;
-        "Embed Twitch Live Chat": boolean;
-        "Embed Twitch Streams": boolean;
-        "Embed YouTube Videos": boolean;
-        "Embed code.org Projects": boolean;
-        Theme: "Dark Mode" | "Light Mode";
-    };
-}
-declare type Role = "Verified" | "Tester" | "Owner" | "Developer";
-export {};

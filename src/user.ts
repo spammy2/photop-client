@@ -2,7 +2,7 @@ import { Chat } from "./chat";
 import { Post } from "./post";
 import { Network } from "./network";
 import { BaseObject, DocumentObject } from "./types";
-import { RawUser, Role, UpdateUserProps, UserProps } from "./usertypes";
+import { ProfileData, RawUser, Role, Social, UpdateUserProps, UserProps } from "./usertypes";
 
 
 export class User implements BaseObject {
@@ -12,9 +12,12 @@ export class User implements BaseObject {
 	avatarUrl?: string;
 	username: string;
 	roles: Role[];
-	following: number | null;
-	followers: number | null;
+	following?: number;
+	followers?: number;
 	profileIsVisible: unknown;
+	bannerUrl?: string;
+	description?: string;
+
 	private _clientUserIsFollowing? = false;
 
 	/**
@@ -161,18 +164,24 @@ export class User implements BaseObject {
 
 	update({avatarUrl,followers,following,roles=[]}: UpdateUserProps) {
 		this.avatarUrl = avatarUrl;
-		this.followers = followers ?? null;
-		this.following = following ?? null;
+		this.followers = followers;
+		this.following = following;
 		this.roles = roles;
 	}
 
-	static GetUserPropsFromRaw(raw: RawUser) {
+	static ConvertSocials(socials: ProfileData["Socials"]): Social[] {
+		//TODO: Convert Socials
+		return [];
+	}
+
+	static GetUserPropsFromRaw(raw: RawUser): UserProps {
 		return {
 			id: raw._id,
 			timestamp: raw.CreationTime || parseInt(raw._id.substring(0, 8), 16) * 1000,
 			avatarUrl: raw.Settings?.ProfilePic,
 			username: raw.User,
 			roles: this.NormalizeRoles(raw.Role),
+			socials: raw.ProfileData ? this.ConvertSocials(raw.ProfileData.Socials) : [],
 		}
 	}
 
@@ -192,7 +201,7 @@ export class User implements BaseObject {
 		this.avatarUrl = avatarUrl;
 		this.username = username;
 		this.roles = roles;
-		this.followers = followers ?? null;
-		this.following = following ?? null;
+		this.followers = followers;
+		this.following = following;
 	}
 }
