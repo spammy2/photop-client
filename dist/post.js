@@ -22,11 +22,13 @@ class Post {
         this.usersLiked = [];
         this._connected = false;
         this._currentConnection = 0;
+        this.onDeleted = () => { };
         /**
          * Subscribe to when a chat is made. Use `Post.connect()` before subscribing.
          */
         this.onChat = (chat) => { };
-        this.createdAt = new Date(this.raw.Timestamp);
+        this.timestamp = raw.Timestamp;
+        this.createdAt = new Date(raw.Timestamp);
         this.text = (0, html_entities_1.decode)(raw.Text);
         this.chatCount = raw.Chats || 0;
         this.likes = raw.Likes || 0;
@@ -35,6 +37,31 @@ class Post {
         if (raw.GroupID) {
             this.group = this._network.groups[raw.GroupID];
         }
+    }
+    /**
+     * Useful if the client was not subscribed to messages and needs to catch up.
+     * At the same time it is only for checking history.
+     */
+    loadChats(before) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const amount = 15;
+            const query = {
+                Post: this.id,
+                Amount: amount,
+            };
+            let loaded = [];
+            if (before) {
+                query.Before = before;
+            }
+            while (true) {
+                const res = yield this._network.message("GetChats", query);
+                this._network.processChats(res.Body.Chats);
+                query.Before = this.chats;
+                if (amount < 15) {
+                    break;
+                }
+            }
+        });
     }
     _onChat(chat) {
         if (this._connected) {

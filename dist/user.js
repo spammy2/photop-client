@@ -9,25 +9,56 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ClientUser = exports.User = void 0;
+exports.User = void 0;
 class User {
-    constructor(_network, /* public */ raw) {
-        var _a;
+    constructor(_network, { timestamp, id, avatarUrl, followers, following, roles = [], username }) {
         this._network = _network;
         this._clientUserIsFollowing = false;
-        this.following = [];
+        this.followingList = [];
         this._isLoadingFollowingUsers = false;
-        this.createdAt = new Date(raw.CreationTime || parseInt(raw._id.substring(0, 8), 16) * 1000);
-        this.id = raw._id;
-        this.avatarUrl = (_a = raw.Settings) === null || _a === void 0 ? void 0 : _a.ProfilePic;
-        this.username = raw.User;
-        this.roles = raw.Role || [];
+        this.timestamp = timestamp;
+        this.createdAt = new Date(timestamp);
+        this.id = id;
+        this.avatarUrl = avatarUrl;
+        this.username = username;
+        this.roles = roles;
+        this.followers = followers;
+        this.following = following;
     }
     /**
-     * Gets a user's post history
+     * Looks up a user's post history, looks up from newest to oldest.
+     * @param oldest Limits the amount of posts searched up to a certain date. By default this is 0, which means it looks up all posts.
      */
-    getPosts() {
-        throw new Error("Not Implemented");
+    getPosts(oldest = 0) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let last = yield this._network.getPosts({ userid: this.id });
+            let all = [];
+            for (const p of last) {
+                if (p.timestamp >= oldest) {
+                    all.push(p);
+                }
+                else {
+                    return all;
+                }
+            }
+            while (true) {
+                last = yield this._network.getPosts({
+                    userid: this.id,
+                    before: last[last.length - 1].timestamp,
+                });
+                if (last.length === 0) {
+                    return all;
+                }
+                for (const p of last) {
+                    if (p.timestamp >= oldest) {
+                        all.push(p);
+                    }
+                    else {
+                        return all;
+                    }
+                }
+            }
+        });
     }
     /**
      * Gets a user's chat history
@@ -57,7 +88,9 @@ class User {
             if (this._clientUserIsFollowing === false)
                 return false;
             try {
-                yield this._network.message("UnfollowUser", { UnfollowUserID: this.id });
+                yield this._network.message("UnfollowUser", {
+                    UnfollowUserID: this.id,
+                });
                 this._clientUserIsFollowing = false;
                 return true;
             }
@@ -72,7 +105,7 @@ class User {
                 throw new Error("Already getting followed users");
             }
             this._isLoadingFollowingUsers = true;
-            this.following = []; //clear following so there are no duplicates
+            this.followingList = []; //clear following so there are no duplicates
             let before = undefined;
             while (true) {
                 const response = yield this._network.message("GetFollowData", {
@@ -104,7 +137,7 @@ class User {
                 for (const userid of clientFollowingIds) {
                     this._network.users[userid]._clientUserIsFollowing = true;
                 }
-                this.following = [...this.following, ...processed];
+                this.followingList = [...this.followingList, ...processed];
                 // really dude?
                 before = response.Body.LastTimestamp;
             }
@@ -113,42 +146,40 @@ class User {
     /**
      * @private Used for updating the details when they update ex: username after the initial creation
      */
-    update(raw) {
+    updateRaw(raw) {
         this.username = raw.User;
         if (raw.Settings && raw.Settings.ProfilePic) {
             this.avatarUrl = raw.Settings.ProfilePic;
         }
-        if (raw.Role) {
-            this.roles = raw.Role || [];
-        }
+        this.roles = User.NormalizeRoles(raw.Role);
+    }
+    update({ avatarUrl, followers, following, roles = [] }) {
+        this.avatarUrl = avatarUrl;
+        this.followers = followers;
+        this.following = following;
+        this.roles = roles;
+    }
+    static ConvertSocials(socials) {
+        //TODO: Convert Socials
+        return [];
+    }
+    static GetUserPropsFromRaw(raw) {
+        var _a;
+        return {
+            id: raw._id,
+            timestamp: raw.CreationTime || parseInt(raw._id.substring(0, 8), 16) * 1000,
+            avatarUrl: (_a = raw.Settings) === null || _a === void 0 ? void 0 : _a.ProfilePic,
+            username: raw.User,
+            roles: this.NormalizeRoles(raw.Role),
+            socials: raw.ProfileData ? this.ConvertSocials(raw.ProfileData.Socials) : [],
+        };
+    }
+    // Creates a user from raw data
+    static FromRaw(network, raw) {
+        return new User(network, this.GetUserPropsFromRaw(raw));
+    }
+    static NormalizeRoles(role) {
+        return role ? (Array.isArray(role) ? role : [role]) : [];
     }
 }
 exports.User = User;
-class ClientUser extends User {
-    constructor(network, raw) {
-        super(network, {
-            Settings: raw.Settings,
-            Role: Array.isArray(raw.Role) || raw.Role === undefined
-                ? raw.Role
-                : [raw.Role],
-            _id: "UserID" in raw ? raw.UserID : raw._id,
-            User: "RealUser" in raw ? raw.RealUser : raw.User,
-        });
-        this.raw = raw;
-        this.email = raw.Email;
-    }
-    updateClient(raw) {
-        super.update({
-            Settings: raw.Settings,
-            Role: Array.isArray(raw.Role) || raw.Role === undefined
-                ? raw.Role
-                : [raw.Role],
-            _id: "UserID" in raw ? raw.UserID : raw._id,
-            User: "RealUser" in raw ? raw.RealUser : raw.User,
-        });
-        if (raw.Email) {
-            this.email = raw.Email;
-        }
-    }
-}
-exports.ClientUser = ClientUser;

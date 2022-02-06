@@ -4,27 +4,27 @@ import {
 	ClientConfiguration,
 	ClientCredentials,
 	DocumentObject,
+	GroupInviteData,
 	ReqTask,
 	SocketResponse,
 } from "./types";
 import {
 	AccountData,
-	ClientUser,
-	RawUser,
 	SignInAccountData,
-	User,
-} from "./user";
-
+} from "./clientusertypes";
+import { ClientUser } from "./clientuser";
 import { WebSocket } from "ws";
 import SimpleSocket from "./vendor/simplesocket";
 import { Group, RawGroup, RawGroupJoin } from "./group";
 import { RawGroupUser } from "./groupuser";
+import { RawUser } from "./usertypes";
+import { User } from "./user";
 
 const SOCKET_URL = "wss://api.photop.live/Server1";
 const IMAGE_UPLOAD_URL = "https://api.photop.live:3000/ImageUpload";
 
 export class Network {
-	readonly socket: WebSocket;
+	socket: WebSocket;
 	readonly simpleSocket = SimpleSocket;
 	//readonly newPosts: Record<string, boolean> = {};
 	readonly awaitingMessages: Record<
@@ -36,23 +36,32 @@ export class Network {
 	chats: Record<string, Chat> = {};
 	users: Record<string, User> = {};
 	groups: Record<string, Group> = {};
-	
+
 	authtoken?: string;
 	userid?: string;
-	connectedChats: string[] = [];
+	connectedPosts = new Set<string>();
 
 	user?: ClientUser;
 
 	chatDelay: number;
 
+	onInvite = (invite: GroupInviteData) => {};
 	onPost = (post: Post) => {};
 	onReady = () => {};
 
-	fingerprint = "25010157537369604664110537365900144030" // useless fingerprint lol
-	
-	generalUpdateSub?: string;
+	fingerprint = "25010157537369604664110537365900144030"; // useless fingerprint lol
 
-	async post(text: string, groupid: string | undefined, medias: any[], configuration: []) {
+	generalUpdateSub?: string;
+	groupInvitesSub?: string;
+	postUpdateSub?: string;
+	profileUpdate?: string;
+
+	async post(
+		text: string,
+		groupid: string | undefined,
+		medias: any[],
+		configuration: []
+	) {
 		const body: any = {
 			Text: text,
 			Configuration: configuration,
@@ -92,11 +101,17 @@ export class Network {
 			});
 		}
 
-		await this.getPosts(undefined, undefined, groupid);;
+		await this.getPosts({ groupid });
 		return this.posts[response.Body.NewPostID];
 	}
 
-	async getPosts(amount: number = 15, before?: number, groupid?: string, initial = false) {
+	async getPosts({
+		amount = 15,
+		groupid,
+		before,
+		userid,
+		initial,
+	}: Partial<GetPostsQuery>) {
 		const response = await this.message<{
 			Posts: RawPost[];
 			Users: RawUser[];
@@ -105,6 +120,7 @@ export class Network {
 			})[];
 		}>("GetPosts", {
 			...(groupid ? { GroupID: groupid } : {}),
+			...(userid ? { FromUserID: userid } : {}),
 			Amount: amount,
 			...(before ? { Before: before } : {}),
 		});
@@ -143,39 +159,51 @@ export class Network {
 	}
 
 	async connectChat(postid: string) {
-		this.connectedChats.push(postid);
-		// no idea why they are separate but not something we care about
+		this.connectedPosts.add(postid);
+		if (this.postUpdateSub) {
+			this.simpleSocket.editSubscribe(this.postUpdateSub, {
+				Task: "PostUpdate",
+				_id: Array.from(this.connectedPosts)
+			})
+		}
 		const response = await this.message<{
 			Chats: RawChat[];
 			Users: RawUser[];
 		}>("ConnectLiveChat", {
+			SimpleSocketID: this.simpleSocket.ClientID,
 			Amount: 25,
-			Posts: this.connectedChats,
-			ChatPosts: this.connectedChats,
+			Posts: Array.from(this.connectedPosts),
+			ChatPosts: Array.from(this.connectedPosts),
 		});
 
 		this.processUsers(response.Body.Users);
 		this.processChats(response.Body.Chats);
+		
 	}
 
 	async disconnectChat(postid: string) {
-		this.connectedChats = this.connectedChats.filter((id) => id !== postid);
+		this.connectedPosts.delete(postid);
 	}
 
 	processUsers(rawUsers: RawUser[]) {
 		let processed: User[] = [];
 		for (const rawUser of rawUsers) {
 			if (rawUser._id in this.users) {
-				this.users[rawUser._id].update(rawUser);
+				this.users[rawUser._id].updateRaw(rawUser);
 			} else {
-				this.users[rawUser._id] = new User(this, rawUser);
+				this.users[rawUser._id] = User.FromRaw(this, rawUser);
 			}
 			processed.push(this.users[rawUser._id]);
 		}
 		return processed;
 	}
 
-	async reply(text: string, postid: string, replyid: string, groupid?: string) {
+	async reply(
+		text: string,
+		postid: string,
+		replyid: string,
+		groupid?: string
+	) {
 		return new Promise<Chat>((res, rej) => {
 			this.chatQueue.push({ postid, replyid, groupid, text, res, rej });
 			if (!this.isProcessing) {
@@ -225,7 +253,7 @@ export class Network {
 		text: string,
 		postid: string,
 		replyid?: string,
-		groupid?: string,
+		groupid?: string
 	): Promise<Chat> {
 		if (text === "") {
 			throw new Error("Can't send empty messages");
@@ -252,7 +280,13 @@ export class Network {
 		});
 	}
 
-	processChats(rawChats: RawChat[]) {
+	/**
+	 *
+	 * @param rawChats RawChats
+	 * @param autosort Whether a post's chats should be automatically sorted afterwards
+	 */
+	processChats(rawChats: RawChat[], autosort = true) {
+		const toSort = new Set<string>();
 		for (const rawChat of rawChats) {
 			if (rawChat._id in this.chats) {
 				this.chats[rawChat._id].update(rawChat);
@@ -264,6 +298,9 @@ export class Network {
 					rawChat
 				);
 
+				// .push() is not a good idea since the added chats may be before the last
+				// to mitigate this we sort if each time, but an option "autosort" is provided to ignore this
+				toSort.add(rawChat.PostID);
 				this.posts[rawChat.PostID].chats.push(chat);
 				this.chats[rawChat._id] = chat;
 			}
@@ -273,6 +310,13 @@ export class Network {
 			if (rawChat.ReplyID) {
 				this.chats[rawChat._id].replyTo = this.chats[rawChat.ReplyID];
 			}
+		}
+		if (autosort) {
+			toSort.forEach((id) => {
+				this.posts[id].chats.sort((a, b) => {
+					return a.timestamp - b.timestamp;
+				});
+			});
 		}
 	}
 
@@ -286,12 +330,40 @@ export class Network {
 		);
 		this.userid = response.Body.UserID;
 		this.authtoken = response.Body.Token;
-		this.user = new ClientUser(this, response.Body);
+		this.user = ClientUser.FromSignIn(this, response.Body);
+		
+		if (!this.config?.disableGroups) {
+			for (const [groupid, rawGroup] of Object.entries(response.Body.Groups)) {
+				this.groups[groupid] = new Group(this, {...rawGroup, _id: groupid});
+				await this.groups[groupid].onReadyPromise;
+			}
+		}
+
+		if (this.generalUpdateSub) {
+			this.simpleSocket.editSubscribe(this.generalUpdateSub, {
+				Task: "GeneralUpdate",
+				Location: "Home",
+				Groups: Object.keys(this.groups),
+				UserID: this.userid,
+			});
+		}
+
+		if (this.groupInvitesSub) {
+			this.simpleSocket.editSubscribe(this.groupInvitesSub, {
+				Task: "NewGroupInvite",
+				UserID: this.userid,
+			});
+		}
 	}
 
-	onGroupsChanged(){
-		if (this.generalUpdateSub){ 
-			this.simpleSocket.editSubscribe(this.generalUpdateSub, { Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid! });
+	onGroupsChanged() {
+		if (this.generalUpdateSub) {
+			this.simpleSocket.editSubscribe(this.generalUpdateSub, {
+				Task: "GeneralUpdate",
+				Location: "Home",
+				Groups: Object.keys(this.groups),
+				UserID: this.userid!,
+			});
 		}
 	}
 
@@ -316,42 +388,88 @@ export class Network {
 				);
 			}
 		}
-		await this.getPosts(undefined, undefined, undefined, true);
+		await this.getPosts({ initial: true });
 
 		if (this.config?.disableGroups !== true) {
-			const getGroupsResponse = await this.message<{Invites: string[], Groups: RawGroup[], JoinedArr: RawGroupJoin[], Owners: RawGroupUser[]}>("GetGroups", {})
+			this.groupInvitesSub = this.simpleSocket.subscribeEvent(
+				{ Task: "NewGroupInvite", UserID: this.userid },
+				(Data: GroupInviteData) => {
+					this.onInvite(Data);
+				}
+			);
+			if (credentials && "token" in credentials) {
+				const getGroupsResponse = await this.message<{
+					Invites: string[];
+					Groups: RawGroup[];
+					JoinedArr: RawGroupJoin[];
+					Owners: RawGroupUser[];
+				}>("GetGroups", {});
 
-			// Body.Owners is unnecessary because we are already fetching the members of the group;
-			this.processUsers(getGroupsResponse.Body.Owners);
-			for (const rawGroup of getGroupsResponse.Body.Groups) {
-				this.groups[rawGroup._id] = new Group(this, rawGroup);
-				await this.groups[rawGroup._id].onReadyPromise;
+				// Body.Owners is unnecessary because we are already fetching the members of the group;
+				// this.processUsers(getGroupsResponse.Body.Owners);
+				for (const rawGroup of getGroupsResponse.Body.Groups) {
+					this.groups[rawGroup._id] = new Group(this, rawGroup);
+					await this.groups[rawGroup._id].onReadyPromise;
+				}
 			}
 		}
-		
+
+		//this.profileUpdate = this.simpleSocket.subscribeEvent()
+
+		this.postUpdateSub = this.simpleSocket.subscribeEvent<{
+			Type: "LikeCounter",
+			_id: string,
+			Change: number,
+		} | {
+			Type: "DeletePost",
+			_id: string,
+		}>({
+			Task: "PostUpdate",
+			_id: Array.from(this.connectedPosts), //which is an empty array
+		}, (Data)=>{
+			if (Data.Type === "LikeCounter") {
+				// this is literally unusable because it is impossible to tell
+				// maybe i can call some event on post.likesChanged
+			} else if (Data.Type === "DeletePost") {
+				this.posts[Data._id].onDeleted();
+				for (const chat of this.posts[Data._id].chats) {
+					delete this.chats[chat.id];
+				}
+				delete this.posts[Data._id];
+			}
+		})
+
 		this.generalUpdateSub = this.simpleSocket.subscribeEvent<{
 			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
-		}>({ Task: "GeneralUpdate", Location: "Home", Groups: Object.keys(this.groups), UserID: this.userid! }, (Data) => {
-			if (Data.Type === "NewPostAdded") {
-				const NewPostData = (
-					Data as unknown as {
-						NewPostData: DocumentObject & {
-							UserID: string;
-							Timestamp: number;
-							GroupID?: string;
-						};
-					}
-				).NewPostData;
+		}>(
+			{
+				Task: "GeneralUpdate",
+				Location: "Home",
+				Groups: Object.keys(this.groups),
+				UserID: this.userid,
+			},
+			(Data) => {
+				if (Data.Type === "NewPostAdded") {
+					const NewPostData = (
+						Data as unknown as {
+							NewPostData: DocumentObject & {
+								UserID: string;
+								Timestamp: number;
+								GroupID?: string;
+							};
+						}
+					).NewPostData;
 
-				//this.newPosts[NewPostData._id] = true;
-				this.getPosts(undefined, undefined, NewPostData.GroupID);
+					//this.newPosts[NewPostData._id] = true;
+					this.getPosts({ groupid: NewPostData.GroupID });
+				}
 			}
-		});
+		);
 		this.onReady();
 	}
 
 	private reqid = 0;
-	message<Body>(task: ReqTask, body?: any): Promise<SocketResponse<Body>> {
+	message<Body>(task: ReqTask, body?: Record<string, undefined | string | number | Array<any>>): Promise<SocketResponse<Body>> {
 		return new Promise((res, rej) => {
 			const message = {
 				Body: body,
@@ -412,6 +530,34 @@ export class Network {
 			client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
 		});
 		this.simpleSocket.debug = this.config?.logSocketMessages ?? false;
+		this.simpleSocket.remoteFunctions.PostStream = (Body) => {
+			if (Body.Type == "NewChat") {
+				const { Users, Chats } = Body as {
+					Chats: RawChat[];
+					Users: RawUser[];
+				};
+
+				this.processUsers(Users);
+
+				this.processChats(Chats);
+				for (const rawChat of Chats) {
+					this.posts[rawChat.PostID]._onChat(
+						this.chats[rawChat._id]
+					);
+				}
+			} else if (Body.Type == "DeleteChat") {
+				for (const chatId of Body.ChatIDs) {
+					const post = this.chats[chatId].post;
+					post.chats.splice(post.chats.indexOf(this.chats[chatId], 1))
+					this.chats[chatId].onDeleted();
+					delete this.chats[chatId];
+				}
+			}
+		}
+		// restart socket if it somehow closes
+		this.socket.onclose = () => {
+			this.socket = new WebSocket(SOCKET_URL);
+		};
 
 		this.socket.onmessage = (rawMessage) => {
 			if (rawMessage.data === "pong") return;
@@ -432,21 +578,21 @@ export class Network {
 				];
 			} else if (message.Metadata.ReqSource === "Server") {
 				if (message.Body.ClientFunction === "NewChatRecieve") {
-					const { Users, Chats } = (
-						message as SocketResponse<{
-							Chats: RawChat[];
-							Users: RawUser[];
-						}>
-					).Body;
+					// const { Users, Chats } = (
+					// 	message as SocketResponse<{
+					// 		Chats: RawChat[];
+					// 		Users: RawUser[];
+					// 	}>
+					// ).Body;
 
-					this.processUsers(Users);
+					// this.processUsers(Users);
 
-					this.processChats(Chats);
-					for (const rawChat of Chats) {
-						this.posts[rawChat.PostID]._onChat(
-							this.chats[rawChat._id]
-						);
-					}
+					// this.processChats(Chats);
+					// for (const rawChat of Chats) {
+					// 	this.posts[rawChat.PostID]._onChat(
+					// 		this.chats[rawChat._id]
+					// 	);
+					// }
 				} else {
 					console.warn(
 						"Received a socket message from Server with an unrecognized ClientFunction"
@@ -460,9 +606,17 @@ export class Network {
 			}
 		};
 		this.socket.onopen = () => {
-			simpleSocketPromise.then(()=>{
+			simpleSocketPromise.then(() => {
 				this._init(credentials);
-			})
+			});
 		};
 	}
+}
+
+export interface GetPostsQuery {
+	amount: number;
+	before: number;
+	userid: string;
+	groupid: string;
+	initial: true;
 }

@@ -8,7 +8,9 @@ class Chat {
         this.user = user;
         this.post = post;
         this.raw = raw;
+        this.onDeleted = () => { };
         this.createdAt = new Date(raw.Timestamp);
+        this.timestamp = raw.Timestamp;
         this.id = raw._id;
         this.text = (0, html_entities_1.decode)(raw.Text);
         this.replyTo = replyTo;
@@ -21,6 +23,7 @@ class Chat {
      */
     update(raw) {
         this.raw = raw;
+        this.timestamp = raw.Timestamp;
         this.createdAt = new Date(raw.Timestamp);
         this.id = raw._id;
         this.text = (0, html_entities_1.decode)(raw.Text);

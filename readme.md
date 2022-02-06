@@ -1,17 +1,17 @@
 # Photop Client
-Photop Client is a library for creating bots for Photop. It works directly with the WebSocket and abstractifies.
+Photop Client is a library for creating bots for Photop. It works directly with the WebSocket instead of html to deliver minimal memory impact and ease of use.
 
 ## How to get started
 Install node and create a project.
 Open terminal and change your directory to your project.
-Install photop-client like this `npm install photop-client`
+Install photop-client like this `npm i photop-client@latest`
 In your node.js program, put `const {Client} = require("photop-client")`
 
 Photop Client has heavy influence from discord.js. Creating posts and listening for posts start with the Client.
 
 You can instantiate the Photop Client in 3 ways.
 1. With username and password.
-2. With authorization token and userid. (You can find it in dev console)
+2. With authorization token, userid, fingerprint. (You can find it in dev console)
 3. With nothing (this means you cannot interact with Photop like liking posts but you can see messages)
 
 Using token is suggested because there is an extra step with the username and password.
@@ -21,7 +21,7 @@ const { Client } = require("photop-client")
 
 const clientWithUsername = new Client({username: "PhotopClient", password:"123456"})
 
-const clientWithToken = new Client({token: "1234abcdef56789", userid: "abc123def"})
+const clientWithToken = new Client({token: "1234abcdef56789", userid: "abc123def", fingerprint: "1011121314151617"})
 
 const guestClient = new Client();
 ```
@@ -56,11 +56,11 @@ post.onChat = (chat)=>{
 }
 ```
 
-You can take a look in `examples/sockbot.ts` to see how to create a discord-ish bot.
+You can take a look in `github.com/spammy2/sockbot` to see how to create a discord-ish bot.
 
 
 ## Contributing
-Photop-Client is not complete! There are many features which are not implemented, like viewing the posts of a user. Documentation is also not fully done. Robot_Engine plans to rely on SimpleSocket instead of normal WebSockets. You can make your own contributions to Photop-Client. Note that it is written in typescript, so you may need to learn it.
+Photop-Client is not complete! There are many features which are not implemented. Documentation is also not fully done. Robot_Engine plans to rely on SimpleSocket instead of normal WebSockets so updates will be necessary in the future. You can make your own contributions to Photop-Client. Note that it is written in typescript, so you may need to learn it.
 ### Architecture
 Photop-Client abstractifies the client, users, chats, and posts into classes, defined in their respective files.
 A private network class handles everything pertaining to the network and all classes perform their actions by calling methods of it.

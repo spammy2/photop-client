@@ -20,10 +20,13 @@ class GroupUser {
     get id() {
         return this.user.id;
     }
-    ;
     kick() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._network.message("GroupModerate", { GroupID: this.group.id, Type: "Kick", User: this.id });
+            yield this._network.message("GroupModerate", {
+                GroupID: this.group.id,
+                Type: "Kick",
+                User: this.id,
+            });
         });
     }
 }

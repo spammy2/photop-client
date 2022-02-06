@@ -1,11 +1,12 @@
 import { decode } from "html-entities";
 import { User } from ".";
-import { Chat } from "./chat";
+import { Chat, RawChat } from "./chat";
 import { Group } from "./group";
 import { Network } from "./network";
-import { DocumentObject } from "./types";
+import { BaseObject, DocumentObject } from "./types";
 
-export class Post {
+export class Post implements BaseObject {
+	timestamp: number;
 	createdAt: Date;
 	text: string;
 	likes: number;
@@ -22,6 +23,35 @@ export class Post {
 
 	private _connected = false;
 	private _currentConnection = 0;
+
+	/**
+	 * Useful if the client was not subscribed to messages and needs to catch up.
+	 * At the same time it is only for checking history.
+	 */
+	async loadChats(before?: number) {
+		const amount = 15;
+		const query: any = {
+			Post: this.id,
+			Amount: amount,
+		};
+		let loaded: Chat[] = [];
+		if (before) {
+			query.Before = before;
+		}
+		while (true) {
+			const res = await this._network.message<{ Chats: RawChat[] }>(
+				"GetChats",
+				query
+			);
+			this._network.processChats(res.Body.Chats);
+			query.Before = this.chats;
+			if (amount < 15) {
+				break;
+			}
+		}
+	}
+
+	onDeleted = ()=>{};
 
 	_onChat(chat: Chat) {
 		if (this._connected) {
@@ -135,10 +165,11 @@ export class Post {
 	 */
 	constructor(
 		private _network: Network,
-		public raw: RawPost,
+		private raw: RawPost,
 		public author: User
 	) {
-		this.createdAt = new Date(this.raw.Timestamp);
+		this.timestamp = raw.Timestamp;
+		this.createdAt = new Date(raw.Timestamp);
 		this.text = decode(raw.Text);
 		this.chatCount = raw.Chats || 0;
 		this.likes = raw.Likes || 0;

@@ -1,4 +1,5 @@
-// why am i putting sockbot.ts in source? because i dont know where to put it so it just gonna go in as well
+// sockbot.ts has been moved to github.com/spammy2/sockbot
+
 import { Chat, Client, Post } from "..";
 import { config } from "dotenv";
 

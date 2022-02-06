@@ -1,12 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Chat = exports.Post = exports.ClientUser = exports.Client = exports.User = void 0;
+exports.Client = void 0;
 const client_1 = require("./client");
 Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return client_1.Client; } });
 const user_1 = require("./user");
-Object.defineProperty(exports, "User", { enumerable: true, get: function () { return user_1.User; } });
-Object.defineProperty(exports, "ClientUser", { enumerable: true, get: function () { return user_1.ClientUser; } });
 const post_1 = require("./post");
-Object.defineProperty(exports, "Post", { enumerable: true, get: function () { return post_1.Post; } });
 const chat_1 = require("./chat");
-Object.defineProperty(exports, "Chat", { enumerable: true, get: function () { return chat_1.Chat; } });
+const clientuser_1 = require("./clientuser");

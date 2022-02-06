@@ -1,6 +1,7 @@
 import { Group } from "./group";
 import { Network } from "./network";
-import { RawUser, User } from "./user";
+import { User } from "./user";
+import { RawUser } from "./usertypes";
 export declare class GroupUser {
     private _network;
     readonly group: Group;
