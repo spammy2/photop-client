@@ -1,12 +1,10 @@
-const {WebSocket} = require("ws")
+const {WebSocket} = require("ws");
 
 // SimpleSocket Client Library
 // ©2022 Exotek
-let SimpleSocket = {
-		remoteFunctions: {},
-	},
+let SimpleSocket = { remoteFunctions: {} },
 	SimpleSocketAPI = {
-		SocketURL: "wss://exotek.co:32560/simplesocket/socket",
+		SocketURL: "wss://simplesocket.net:32560/simplesocket/socket",
 	};
 (SimpleSocketAPI.SupportsETF = "undefined" != typeof TextEncoder),
 	(SimpleSocketAPI.Operations = {}),
@@ -81,11 +79,7 @@ let SimpleSocket = {
 					e + "_" + Date.now() + "_" + SimpleSocketAPI.TotalMessages),
 			"Connect" != e && (1 != n || null != o))
 		) {
-			let n = {
-				OP: t.O,
-				Task: e,
-				Data: t,
-			};
+			let n = { OP: t.O, Task: e, Data: t };
 			if ("Subscribe" == e && null != t.Ftr) {
 				let e = t.Ftr;
 				"object" == typeof t.Ftr && (e = JSON.stringify(e)),
@@ -130,9 +124,7 @@ let SimpleSocket = {
 				);
 		let o = Object.keys(SimpleSocketAPI.Operations);
 		for (let e = 0; e < o.length; e++) {
-			let t = {
-				...SimpleSocketAPI.Operations[o[e]],
-			};
+			let t = { ...SimpleSocketAPI.Operations[o[e]] };
 			null != t.Data
 				? (delete SimpleSocketAPI.Operations[o[e]],
 				  SimpleSocketAPI.SendData(t.Task, t.Data, t.Callback, !0))
@@ -194,9 +186,7 @@ let SimpleSocket = {
 				!0
 			);
 		SimpleSocketAPI.Debug("NEW CONFIG: Config: " + JSON.stringify(e));
-		let t = {
-			Default: e,
-		};
+		let t = { Default: e };
 		SimpleSocketAPI.SendData("DefaultConfig", t),
 			(SimpleSocketAPI.DefaultConfig = t);
 	}),
@@ -215,10 +205,7 @@ let SimpleSocket = {
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let n = {
-			Ftr: e,
-			Data: t,
-		};
+		let n = { Ftr: e, Data: t };
 		null != o && (n.Con = o), SimpleSocketAPI.SendData("Publish", n);
 	}),
 	(SimpleSocket.subscribeEvent = function (e, t, o) {
@@ -234,9 +221,7 @@ let SimpleSocket = {
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let n = {
-			Ftr: e,
-		};
+		let n = { Ftr: e };
 		return (
 			null != o && (n.Con = o),
 			t.length < 2 && (null == o && (n.Con = {}), (n.Con.NoConfig = !0)),
@@ -258,10 +243,7 @@ let SimpleSocket = {
 	}),
 	(SimpleSocket.RemoteControl = function (e) {
 		if ("Sub" == e.T) {
-			let t = {
-					Ftr: e.Ftr,
-					Con: e.Con,
-				},
+			let t = { Ftr: e.Ftr, Con: e.Con },
 				o = e.Ftr;
 			"object" == typeof e.Ftr && (o = JSON.stringify(o)),
 				null != e.Con && (o += JSON.stringify(e.Con)),
@@ -360,16 +342,11 @@ let SimpleSocket = {
 				" | Config: " +
 				JSON.stringify(o)
 		);
-		let n = {
-			Ftr: e,
-			Data: t,
-		};
+		let n = { Ftr: e, Data: t };
 		null != o && (n.Con = o),
 			SimpleSocketAPI.SendData("DisPub", n),
 			null != e || null == SimpleSocketAPI.DisconnectEvent
 				? (SimpleSocketAPI.DisconnectEvent = n)
 				: delete SimpleSocketAPI.DisconnectEvent;
 	});
-
-
 module.exports = SimpleSocket;
