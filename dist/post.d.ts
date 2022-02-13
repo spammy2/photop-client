@@ -47,7 +47,7 @@ export declare class Post implements BaseObject {
      * @param onDisconnect Called when disconnected automatically
      * @returns setBack function that allows you to set the disconnect time back.
      */
-    connect(disconnectAfter: number, onDisconnect: () => void): Promise<() => void>;
+    connect(disconnectAfter: number, onDisconnect?: () => void): Promise<() => void>;
     /**
      * Stop listening to chats from this post
      */
