@@ -86,7 +86,7 @@ export class Post implements BaseObject {
 	 */
 	async connect(
 		disconnectAfter: number,
-		onDisconnect: () => void
+		onDisconnect?: () => void
 	): Promise<() => void>;
 	async connect(
 		disconnectAfter?: number,
