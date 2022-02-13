@@ -17,8 +17,9 @@ class ClientUser extends user_1.User {
         return new ClientUser(network, Object.assign(Object.assign({}, this.GetUserPropsFromRaw(raw)), { email: raw.Email }));
     }
     static FromSignIn(network, raw) {
+        var _a;
         return new ClientUser(network, {
-            socials: this.ConvertSocials(raw.ProfileData.Socials),
+            socials: this.ConvertSocials((_a = raw.ProfileData) === null || _a === void 0 ? void 0 : _a.Socials),
             email: raw.Email,
             roles: this.NormalizeRoles(raw.Role),
             timestamp: parseInt(raw.UserID.substring(0, 8), 16) * 1000,
