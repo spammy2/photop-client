@@ -10,6 +10,12 @@ export class Chat implements BaseObject {
 	createdAt: Date;
 	id: string;
 	text: string;
+	author: User;
+
+	/**
+	 * @deprecated Use Chat.author for consistency with Post.author
+	 */
+	user: User;
 
 	/** The chat this this chat is replying to. */
 	replyTo?: Chat;
@@ -36,8 +42,10 @@ export class Chat implements BaseObject {
 	/** Called when it has been detected that this chat is deleted. */
 	onDeleted = ()=>{};
 
-	constructor(private _network: Network, public user: User, public post: Post, public raw: RawChat, replyTo?: Chat) {
+	constructor(private _network: Network, user: User, public post: Post, public raw: RawChat, replyTo?: Chat) {
 		this.createdAt = new Date(raw.Timestamp);
+		this.user = user;
+		this.author = user;
 		this.timestamp = raw.Timestamp;
 		this.id = raw._id;
 		this.text = decode(raw.Text);

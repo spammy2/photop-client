@@ -5,12 +5,13 @@ const html_entities_1 = require("html-entities");
 class Chat {
     constructor(_network, user, post, raw, replyTo) {
         this._network = _network;
-        this.user = user;
         this.post = post;
         this.raw = raw;
         /** Called when it has been detected that this chat is deleted. */
         this.onDeleted = () => { };
         this.createdAt = new Date(raw.Timestamp);
+        this.user = user;
+        this.author = user;
         this.timestamp = raw.Timestamp;
         this.id = raw._id;
         this.text = (0, html_entities_1.decode)(raw.Text);

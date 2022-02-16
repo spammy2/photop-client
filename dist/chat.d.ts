@@ -5,13 +5,17 @@ import { BaseObject, DocumentObject } from "./types";
 import { User } from "./user";
 export declare class Chat implements BaseObject {
     private _network;
-    user: User;
     post: Post;
     raw: RawChat;
     timestamp: number;
     createdAt: Date;
     id: string;
     text: string;
+    author: User;
+    /**
+     * @deprecated Use Chat.author for consistency with Post.author
+     */
+    user: User;
     /** The chat this this chat is replying to. */
     replyTo?: Chat;
     /** The group that this chat is part of. Undefined if not part of any group. */
