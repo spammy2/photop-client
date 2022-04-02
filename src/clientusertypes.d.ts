@@ -30,7 +30,7 @@ export interface SignInAccountData {
 	TokenExpiresDuration: number;
 	TokenExpires: number;
 	UserID: string;
-	Groups: RawGroup[]
+	Groups?: RawGroup[]
 }
 
 export interface RawClientUserSettings extends RawUserSettings {

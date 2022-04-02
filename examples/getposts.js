@@ -8,10 +8,7 @@ const client = new Client(
 );
 
 client.onReady=async ()=>{
-	//this guy is following way too many people
-
-
-	const user = await client.getUserFromUsername("Shouta")
+	const user = await client.getUserFromUsername("Shouta_")
 	
 	const posts = await user.getPosts(/*Date.now() - 14 * 24 * 60 * 60 * 1000*/);
 	const mapped = posts.map(p=>{

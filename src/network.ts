@@ -323,7 +323,7 @@ export class Network {
 
 		if (!this.config?.disableGroups) {
 			for (const [groupid, rawGroup] of Object.entries(
-				response.Body.Groups
+				response.Body.Groups || []
 			)) {
 				this.groups[groupid] = new Group(this, {
 					...rawGroup,
