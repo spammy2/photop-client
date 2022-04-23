@@ -1,12 +1,16 @@
 import { Chat, RawChat } from "./chat";
 import { Post, RawPost } from "./post";
 import {
+	ChatId,
 	ClientConfiguration,
 	ClientCredentials,
 	DocumentObject,
+	GroupId,
 	GroupInviteData,
+	PostId,
 	ReqTask,
 	SocketResponse,
+	UserId,
 } from "./types";
 import { AccountData, SignInAccountData } from "./clientusertypes";
 import { ClientUser } from "./clientuser";
@@ -29,14 +33,14 @@ export class Network {
 		(result: SocketResponse<any>) => void
 	> = {};
 
-	posts: Record<string, Post> = {};
-	chats: Record<string, Chat> = {};
-	users: Record<string, User> = {};
-	groups: Record<string, Group> = {};
+	posts: Record<PostId, Post> = {};
+	chats: Record<ChatId, Chat> = {};
+	users: Record<UserId, User> = {};
+	groups: Record<GroupId, Group> = {};
 
 	authtoken?: string;
 	userid?: string;
-	connectedPosts = new Set<string>();
+	connectedPosts = new Set<PostId>();
 
 	user?: ClientUser;
 
@@ -71,7 +75,7 @@ export class Network {
 			body.Media.ImageCount = medias.length;
 		}
 
-		const response = await this.message<{ NewPostID: string }>(
+		const response = await this.message<{ NewPostID: PostId }>(
 			"CreatePost",
 			body
 		);
@@ -155,7 +159,7 @@ export class Network {
 		return posts;
 	}
 
-	async connectChat(postid: string) {
+	async connectChat(postid: PostId) {
 		this.connectedPosts.add(postid);
 		if (this.postUpdateSub) {
 			this.simpleSocket.editSubscribe(this.postUpdateSub, {

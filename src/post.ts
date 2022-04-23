@@ -31,33 +31,21 @@ export class Post implements BaseObject {
 	private _currentConnection = 0;
 
 	/**
-	 * Useful if the client was not subscribed to messages and needs to catch up.
-	 * At the same time it is only for checking history.
+	 * Fetches newest chats from this post.
+	 * @param amount Amount of chats to get
 	 */
-	async loadChats(/*before?: number*/) {
-		const amount = 15;
-		const query: any = {
-			Post: this.id,
-			Amount: amount,
-		};
-		let loaded: Chat[] = [];
-		/*
-		if (before) {
-			query.Before = before;
-		}
-		*/
-		while (true) {
+	async fetchChats(amount = 15){
+		const query: any = {Post: this.id, Amount: Math.min(15, amount)};
+		const loaded: Chat[] = [];
+		while (loaded.length < amount) {
 			const res = await this._network.message<{ Chats: RawChat[] }>(
 				"GetChats",
 				query
 			);
-			loaded = [...this._network.processChats(res.Body.Chats), ...loaded];
+			loaded.push(...this._network.processChats(res.Body.Chats));
 			query.Before = loaded[0].timestamp;
-			if (amount < 15) {
-				break;
-			}
 		}
-
+		return loaded;
 	}
 
 	onDeleted = ()=>{};

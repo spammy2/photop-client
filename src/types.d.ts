@@ -70,6 +70,12 @@ export interface ClientConfiguration {
 	 * *TL;DR You should set this to true if you aren't using groups.*
 	 */
 	disableGroups?: boolean;
+
+	/**
+	 * Specifies a limit to how many posts you can connect to at once.
+	 * If it exceeds the limit, it will disconnect the oldest one.
+	 */
+	maxConnectedPosts?: number;
 }
 
 export interface SocketResponse<body> {
@@ -101,3 +107,8 @@ export interface BaseObject {
 export interface DocumentObject {
 	_id: string;
 }
+
+export type PostId = string;
+export type GroupId = string;
+export type UserId = string;
+export type ChatId = string;

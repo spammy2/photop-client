@@ -9,6 +9,7 @@ import { User } from "./user";
 import fetch from "cross-fetch";
 import { Group, RawGroup } from "./group";
 import { RawUser } from "./usertypes";
+import { Editor } from "./editor";
 
 /**
  * Represents a Photop client
@@ -95,6 +96,10 @@ export class Client {
 		if (data.user) {
 			return User.FromRaw(this._network, data.user);
 		}
+	}
+
+	editor(){
+		return new Editor(this._network);
 	}
 
 	async getUserFromUsername(name: string): Promise<User | undefined> {
