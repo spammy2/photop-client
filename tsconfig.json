@@ -100,7 +100,6 @@
   "exclude": [
     "node_modules",
     "examples",
-    "dist",
-    "src/vendor"
+    "dist"
   ]
 }
