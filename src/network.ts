@@ -167,11 +167,12 @@ export class Network {
 				_id: Array.from(this.connectedPosts),
 			});
 		}
+
 		const response = await this.message<{
 			Chats: RawChat[];
 			Users: RawUser[];
 		}>("ConnectLiveChat", {
-			SimpleSocketID: this.simpleSocket.ClientID,
+			SimpleSocketID: this.simpleSocket.SecureID,
 			Amount: 25,
 			Posts: Array.from(this.connectedPosts),
 			ChatPosts: Array.from(this.connectedPosts),

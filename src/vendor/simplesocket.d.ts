@@ -4,7 +4,7 @@ export interface SimpleSocket {
 	connect(details: {project_id: string, client_token: string}): Promise<void>;
 	debug: boolean,
 	remoteFunctions: Record<string, (body: any)=>void>,
-	ClientID: string,
+	SecureID: string,
 }
 
 type SubscriptionQuery = {
