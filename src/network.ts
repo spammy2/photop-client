@@ -432,14 +432,14 @@ export class Network {
 			},
 			(Data) => {
 				if (Data.Type === "LikeCounter") {
-					// this is literally unusable because it is impossible to tell
-					// maybe i can call some event on post.likesChanged
+					this.posts[Data._id].likesChanged();
 				} else if (Data.Type === "DeletePost") {
-					// this.posts[Data._id].onDeleted();
-					// for (const chat of this.posts[Data._id].chats) {
-					// 	delete this.chats[chat.id];
-					// }
-					// delete this.posts[Data._id];
+					this.posts[Data._id].onDeleted();
+					for (const chatid in this.chats) {
+						this.chats[chatid].onDeleted();
+						delete this.chats[chatid];
+					}
+					delete this.posts[Data._id];
 				}
 			}
 		);

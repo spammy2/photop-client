@@ -48,6 +48,7 @@ export class Post implements BaseObject {
 		return loaded;
 	}
 
+	likesChanged = ()=>{};
 	onDeleted = ()=>{};
 
 	_onChat(chat: Chat) {
