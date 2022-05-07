@@ -1,11 +1,14 @@
 {
   "name": "photop-client",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "",
   "types": "dist/index.d.ts",
   "main": "dist/index.js",
   "repository": "https://github.com/spammy2/photop-client",
-  "files": ["dist/", "readme.md"],
+  "files": [
+    "dist/",
+    "readme.md"
+  ],
   "scripts": {
     "test": "node examples/pingbot.js",
     "sockbot": "tsc && tsc examples/sockbot.ts && node --trace-warnings --unhandled-rejections=strict examples/sockbot.js"
