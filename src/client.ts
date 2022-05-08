@@ -91,10 +91,10 @@ export class Client {
 			.then((e) => e.json())
 			.catch(() => {
 				console.log("fetch to photoprest resulted in error");
-			})) as { user?: RawUser };
+			})) as { User?: RawUser };
 
-		if (data.user) {
-			return User.FromRaw(this._network, data.user);
+		if (data.User) {
+			return User.FromRaw(this._network, data.User);
 		}
 	}
 
