@@ -93,7 +93,7 @@ export class Client {
 				console.log("fetch to photoprest resulted in error");
 			})) as { User?: RawUser };
 
-		if (data.User) {
+		if (data?.User) {
 			const u = User.FromRaw(this._network, data.User);
 			this._network.users[u.id] = u;
 			return u;
