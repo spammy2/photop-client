@@ -551,7 +551,11 @@ export class Network {
 
 				this.processChats(Chats);
 				for (const rawChat of Chats) {
-					this.posts[rawChat.PostID]._onChat(this.chats[rawChat._id]);
+					if (this.posts[rawChat.PostID]) {
+						this.posts[rawChat.PostID]._onChat(this.chats[rawChat._id]);
+					} else {
+						console.warn(`photop-client may have subscribed to a post via simplesocket that is unknown to it. POSTID: ${rawChat.PostID}`)
+					}
 				}
 			} else if (Body.Type == "DeleteChat") {
 				for (const chatId of Body.ChatIDs) {
