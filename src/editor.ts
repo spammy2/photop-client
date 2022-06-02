@@ -19,23 +19,30 @@ const VerifyEmailRegex =
 	/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const VerifyUsernameRegex = /[A-Za-z0-9_-]{3,16}/;
 
-interface ModifiedUserData {
-	username?: string;
-	password?: { OldPassword: string; NewPassword: string };
-	email?: string;
+interface _ModifiedUserData {
+	description: string;
+	username: string;
+	password: { OldPassword: string; NewPassword: string };
+	email: string;
 }
+type ModifiedUserData = Partial<_ModifiedUserData>;
 
 /**
  * Interface for batching edits together; NOT DONE
  */
 export class Editor {
-	_modified: ModifiedUserData = {};
+	private _modified: ModifiedUserData = {};
 	setEmail(email: string) {
 		if (VerifyEmailRegex.test(email)) {
 			return this;
 		} else {
 			throw new TypeError("Invalid email");
 		}
+	}
+
+	setDescription(description: string) {
+		this._modified.description = description;
+		return this;
 	}
 
 	setUsername(username: string) {
@@ -63,12 +70,17 @@ export class Editor {
 		const updates: Change[] = [];
 		if (this._modified.username) {
 			updates.push({ Change: "Username", NewText: this._modified.username });
-		} else if (this._modified.password) {
+		} 
+		if (this._modified.password) {
 			updates.push({ Change: "Password", ...this._modified.password });
-		} else if (this._modified.email) {
+		}
+		if (this._modified.email) {
 			updates.push({ Change: "Email", Email: this._modified.email });
 		}
-		const result = await this._network.message("UpdateAccountData", { Update: [] });
+		if (this._modified.description) {
+			updates.push({ Change: "ProfileDescription", NewText: this._modified.description });
+		}
+		const result = await this._network.message("UpdateAccountData", { Update: updates });
 		switch (result.Body.Code) {
 			case 200:
 				return true;
