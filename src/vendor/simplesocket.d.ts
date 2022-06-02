@@ -1,10 +1,15 @@
-export interface SimpleSocket {
-	subscribeEvent<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): string;
-	editSubscribe(subid: string, query: SubscriptionQuery): void;
-	connect(details: {project_id: string, client_token: string}): Promise<void>;
-	debug: boolean,
-	remoteFunctions: Record<string, (body: any)=>void>,
-	SecureID: string,
+class Subscription<T extends SubscriptionQuery = SubscriptionQuery> {
+	id: string;
+	edit(newFilter: T): void;
+	close(): void;
+}
+export default class SimpleSocket {
+	constructor(init: {project_id: string, project_token: string})
+	socket: WebSocket;
+	showDebug: boolean;
+	remotes: Record<string, (body: any)=>void>
+	subscribe<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): Subscription<T>;
+	secureId: string;
 }
 
 type SubscriptionQuery = {
@@ -22,8 +27,3 @@ type SubscriptionQuery = {
 	Task: "PostUpdate",
 	_id: string[],
 }
-
-
-declare const api: SimpleSocket;
-
-export default api

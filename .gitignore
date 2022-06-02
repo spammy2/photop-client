@@ -3,3 +3,4 @@ test
 .env
 out.json
 dist
+**/.DS_Store

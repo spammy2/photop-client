@@ -1,5 +1,280 @@
-const {
-	WebSocket
-} = require("ws");"use strict"; // SimpleSocket Client Library
-let SimpleSocket={remoteFunctions:{}},SimpleSocketAPI={SocketURL:"wss://simplesocket.net:32560/simplesocket/socket"};SimpleSocketAPI.SupportsETF="undefined"!=typeof TextEncoder,SimpleSocketAPI.Operations={},SimpleSocketAPI.TotalMessages=0,SimpleSocketAPI.ConnectSocket=function(){let e="";1==SimpleSocketAPI.SupportsETF&&(e="?en=etf"),SimpleSocketAPI.Socket=new WebSocket(SimpleSocketAPI.SocketURL+e),1==SimpleSocketAPI.SupportsETF&&(SimpleSocketAPI.Socket.binaryType="arraybuffer")},SimpleSocketAPI.Debug=function(e,t,o){(1==SimpleSocket.debug||t)&&(1==SimpleSocket.debugStyle?1==o?console.error("%cSimpleSocket%c "+e,"color: #4F61FF; font-family: Didot, sans-serif; font-weight: 900; font-size: 14px;","color: white"):console.log("%cSimpleSocket%c "+e,"color: #4F61FF; font-family: Didot, sans-serif; font-weight: 900; font-size: 14px;","color: white"):1==o?console.error(e):console.log(e))},SimpleSocketAPI.TryConnection=async function(){return await new Promise((async function(e,t){function o(){SimpleSocketAPI.Debug("CONNECTING"),SimpleSocketAPI.ConnectSocket(),SimpleSocketAPI.Socket.onopen=function(t){SimpleSocketAPI.Socket.onmessage=function(t){SimpleSocketAPI.Message(t.data),null!=SimpleSocketAPI.IntervalConnection&&(clearInterval(SimpleSocketAPI.IntervalConnection),SimpleSocketAPI.IntervalConnection=null,SimpleSocketAPI.Open(t.data),e(!0))},SimpleSocketAPI.Socket.onclose=function(){SimpleSocketAPI.Close(),1!=SimpleSocketAPI.ExpectClose&&SimpleSocketAPI.TryConnection()},SimpleSocketAPI.SendData("Connect",{Type:"Client",ID:SimpleSocketAPI.ID,Token:SimpleSocketAPI.Token})}}clearInterval(SimpleSocketAPI.IntervalConnection),SimpleSocketAPI.IntervalConnection=setInterval(o,1e4),o()}))},SimpleSocketAPI.SendData=function(e,t,o,S){if(SimpleSocketAPI.TotalMessages+=1,SimpleSocketAPI.TotalMessages>9999&&(SimpleSocketAPI.TotalMessages=0),null==t.O&&(t.O=e+"_"+Date.now()+"_"+SimpleSocketAPI.TotalMessages),"Connect"!=e&&(1!=S||null!=o)){let S={OP:t.O,Task:e,Data:t};if("Subscribe"==e&&null!=t.Ftr){let e=t.Ftr;"object"==typeof t.Ftr&&(e=JSON.stringify(e)),null!=t.Con&&(e+=JSON.stringify(t.Con)),S.Hash=SimpleSocketAPI.Hash(e)}null!=o&&(S.Callback=o),SimpleSocketAPI.Operations[t.O]=S}let n=JSON.stringify(t);return null==SimpleSocketAPI.Socket||1!=SimpleSocketAPI.Socket.readyState||null==SimpleSocket.ClientID&&"Connect"!=e||(SimpleSocketAPI.Debug("DATA SENT: "+n),1==SimpleSocketAPI.SupportsETF&&(n=new TextEncoder("utf-8").encode(n)),SimpleSocketAPI.Socket.send(n),null==o&&null!=SimpleSocketAPI.Operations[t.O]&&delete SimpleSocketAPI.Operations[t.O]),t.O},SimpleSocketAPI.Open=function(e){SimpleSocketAPI.Debug("CONNECTED"),"object"==typeof e&&(e=new TextDecoder("utf-8").decode(e));let t=JSON.parse(e);SimpleSocket.ClientID=t.ClientID,SimpleSocket.ServerID=t.ServerID,SimpleSocket.SecureID=t.SecureID,null!=SimpleSocket.onopen&&SimpleSocket.onopen(),null!=SimpleSocket.onfirstopen&&SimpleSocket.onfirstopen(),null!=SimpleSocketAPI.DefaultConfig&&SimpleSocketAPI.SendData("DefaultConfig",SimpleSocketAPI.DefaultConfig),null!=SimpleSocketAPI.DisconnectEvent&&SimpleSocketAPI.SendData("DisPub",SimpleSocketAPI.DisconnectEvent);let o=Object.keys(SimpleSocketAPI.Operations);for(let e=0;e<o.length;e++){let t={...SimpleSocketAPI.Operations[o[e]]};null!=t.Data?(delete SimpleSocketAPI.Operations[o[e]],SimpleSocketAPI.SendData(t.Task,t.Data,t.Callback,!0)):delete SimpleSocketAPI.Operations[o[e]]}},SimpleSocketAPI.RemoveSub=function(e){null!=SimpleSocketAPI.Operations[e]&&delete SimpleSocketAPI.Operations[e]},SimpleSocketAPI.Message=function(e){"object"==typeof e&&(e=new TextDecoder("utf-8").decode(e));let t=JSON.parse(e),o="";if(null!=t.O){let e=SimpleSocketAPI.Operations[t.O];if(null!=e){let S=Date.now()-e[0];o=" | TOOK: "+S+" MS",SimpleSocket.socketLatancy=S,null!=e[2]&&e[2](t.D),delete SimpleSocketAPI.Operations[t.O]}}null!=t.CF&&SimpleSocket[t.CF](t.P),1==t.Close&&(SimpleSocketAPI.ExpectClose=!0),SimpleSocketAPI.Debug("DATA RECIEVED: "+e+o),null!=t.E&&(SimpleSocketAPI.RemoveSub(t.O),SimpleSocketAPI.Debug("ERROR: "+t.E,!0,!0))},SimpleSocketAPI.Close=function(){SimpleSocketAPI.Debug("CONNECTION LOST"),SimpleSocket.ClientID=null,SimpleSocket.ServerID=null,null!=SimpleSocket.onclose&&SimpleSocket.onclose()},SimpleSocketAPI.Hash=function(e){let t=0;for(let o=0;o<e.length;o++){t=(t<<5)-t+e.charCodeAt(o),t&=t}return t},SimpleSocket.socketLatancy=0,SimpleSocket.CLIENT_ID="ClientID_REPLACE_ake83awi25",SimpleSocket.connect=async function(e){SimpleSocketAPI.IsConnecting=!0,SimpleSocketAPI.ID=e.project_id,SimpleSocketAPI.Token=e.client_token,await SimpleSocketAPI.TryConnection()},SimpleSocketAPI.DefaultConfig=null,SimpleSocket.setDefaultConfig=function(e){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);SimpleSocketAPI.Debug("NEW CONFIG: Config: "+JSON.stringify(e));let t={Default:e};SimpleSocketAPI.SendData("DefaultConfig",t),SimpleSocketAPI.DefaultConfig=t},SimpleSocket.publishEvent=function(e,t,o){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);SimpleSocketAPI.Debug("PUBLISHING: Filter: "+JSON.stringify(e)+" | Data: "+JSON.stringify(t)+" | Config: "+JSON.stringify(o));let S={Ftr:e,Data:t};null!=o&&(S.Con=o),SimpleSocketAPI.SendData("Publish",S)},SimpleSocket.subscribeEvent=function(e,t,o){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);SimpleSocketAPI.Debug("SUBSCRIBING: Filter: "+JSON.stringify(e)+" | Config: "+JSON.stringify(o));let S={Ftr:e};return null!=o&&(S.Con=o),t.length<2&&(null==o&&(S.Con={}),S.Con.NoConfig=!0),"FUNCTION_SubEvent:"+SimpleSocketAPI.SendData("Subscribe",S,t)},SimpleSocket.Broadcast=function(e){if(null==e.Func){let t=Object.keys(SimpleSocketAPI.Operations);for(let o=0;o<t.length;o++){let S=SimpleSocketAPI.Operations[t[o]];S.Hash==e.Hash&&null!=S.Callback&&S.Callback(e.Data,e.Config)}}else null!=SimpleSocket.remoteFunctions[e.Func]&&SimpleSocket.remoteFunctions[e.Func](e.Data,e.Config)},SimpleSocket.RemoteControl=function(e){if("Sub"==e.T){let t={Ftr:e.Ftr,Con:e.Con},o=e.Ftr;"object"==typeof e.Ftr&&(o=JSON.stringify(o)),null!=e.Con&&(o+=JSON.stringify(e.Con)),t.Hash=SimpleSocketAPI.Hash(o),t.Func=e.Func,SimpleSocketAPI.Operations["Subscribe_"+e.Func+"_Remote"]=t,SimpleSocketAPI.Debug("[REMOTE] SUBSCRIBING: Filter: "+JSON.stringify(e.Ftr))}else"CloseSub"==e.T&&null!=SimpleSocketAPI.Operations["Subscribe_"+e.Func+"_Remote"]&&(delete SimpleSocketAPI.Operations["Subscribe_"+e.Func+"_Remote"],SimpleSocketAPI.Debug("[REMOTE] CLOSING SUB: Function: "+e.Func))},SimpleSocket.editSubscribe=function(e,t,o){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);let S={};if(null!=t&&(S.Ftr=t),null!=o&&(S.Con=o),Object.keys(S)<1)return;let n=e.substring(18);if(null==SimpleSocketAPI.Operations[n]||null!=SimpleSocketAPI.Operations[n].Func)return;let l=SimpleSocketAPI.Operations[n].Data,i=null,c="";c+=null!=t?JSON.stringify(t):JSON.stringify(l.Ftr),c+=null!=o?JSON.stringify(o):JSON.stringify(l.Con),i=SimpleSocketAPI.Hash(c),i!=SimpleSocketAPI.Operations[n].Hash&&(S.PrevHash=SimpleSocketAPI.Operations[n].Hash,null!=t&&(SimpleSocketAPI.Operations[n].Data.Ftr=t,SimpleSocketAPI.Operations[n].Hash=i),null!=o&&(SimpleSocketAPI.Operations[n].Data.Con=o),SimpleSocketAPI.Debug("EDITING SUB: Function: "+e+" | New Filter: "+JSON.stringify(t)+" | New Config: "+JSON.stringify(o)),null!=SimpleSocket.ClientID&&SimpleSocketAPI.SendData("EditSub",S))},SimpleSocket.closeSubscribe=function(e){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);let t=e.substring(18);null!=SimpleSocketAPI.Operations[t]&&null==SimpleSocketAPI.Operations[t].Func&&(SimpleSocketAPI.Debug("CLOSING SUBSCRIBE: ID: "+e),SimpleSocketAPI.SendData("CloseSub",{Hash:SimpleSocketAPI.Operations[t].Hash}),SimpleSocketAPI.RemoveSub(t))},SimpleSocketAPI.DisconnectEvent=null,SimpleSocket.setDisconnectEvent=function(e,t,o){if(null==SimpleSocketAPI.IsConnecting)return void SimpleSocketAPI.Debug("ERROR: Must connect WebSocket first, call SimpleSocket.connect({ project_id, client_token });",!0,!0);SimpleSocketAPI.Debug("Setting Disconnect Event: Filter: "+JSON.stringify(e)+" | Data: "+JSON.stringify(t)+" | Config: "+JSON.stringify(o));let S={Ftr:e,Data:t};null!=o&&(S.Con=o),SimpleSocketAPI.SendData("DisPub",S),null!=e||null==SimpleSocketAPI.DisconnectEvent?SimpleSocketAPI.DisconnectEvent=S:delete SimpleSocketAPI.DisconnectEvent};
-module.exports = SimpleSocket;
+const WebSocket = require('ws');
+export default class SimpleSocket {
+	constructor(init) {
+	  this.id = init.project_id;
+	  this.token = init.project_token;
+  
+	  this.socketURL = "wss://simplesocket.net:32560/socket/v2";
+	  this.supportsETF = init.useBinary || typeof(TextEncoder) != 'undefined';
+	  this.operations = {};
+	  this.totalMessages = 0;
+  
+	  this.remotes = {};
+  
+	  this.connectSocket();
+	}
+  
+	debug(message, force, error) {
+	  if (this.showDebug == true || force) {
+		if (this.debugStyle == true) {
+		  if (error == true) {
+			console.error("%cSimpleSocket%c " + message, "color: #4F61FF; font-family: Didot, sans-serif; font-weight: 900; font-size: 14px;", "color: white");
+		  } else {
+			console.log("%cSimpleSocket%c " + message, "color: #4F61FF; font-family: Didot, sans-serif; font-weight: 900; font-size: 14px;", "color: white");
+		  }
+		} else {
+		  if (error == true) {
+			console.error(message);
+		  } else {
+			console.log(message);
+		  }
+		}
+	  }
+	}
+  
+	send(oper, data, callback, useID) {
+	  let messID = useID;
+	  if (useID == null) {
+		this.totalMessages += 1;
+		messID = parseInt(oper.toString() + this.totalMessages.toString());
+	  }
+	  let sendData = [messID];
+  
+	  for (let i = 0; i < data.length; i++) {
+		sendData[i+1] = data[i];
+	  }
+  
+	  if (oper > 1) {
+		let storeOp = [oper, data, callback];
+		if (oper == 2) {
+		  storeOp[3] = this.hash(data[0]);
+		}
+		this.operations[messID] = storeOp;
+	  }
+  
+	  if (this.socket != null && this.socket.readyState == 1 && (this.clientID != null || oper == 1)) {
+		let sendStr = JSON.stringify(sendData);
+		sendStr = sendStr.substring(1, sendStr.length - 1);
+		this.debug("SENT: " + sendStr);
+		
+		if (this.supportsETF == true) {
+		  sendStr = new TextEncoder("utf-8").encode(sendStr);
+		}
+		
+		this.socket.send(sendStr);
+  
+		if (callback == null && this.operations[messID] != null && oper < 7) {
+		  delete this.operations[messID];
+		}
+	  }
+  
+	  return messID;
+	}
+  
+	handleMessage(recData) {
+	  if (typeof recData === 'object') {
+		recData = new TextDecoder("utf-8").decode(recData);
+	  }
+  
+	  this.debug("RECIEVED: " + recData);
+  
+	  let data = JSON.parse("[" + recData + "]");
+  
+	  switch (data[0]) {
+		case 2:
+		  // SUBSCRIBE
+		  if (data[4] == null) {
+			let opKeys = Object.keys(this.operations);
+			for (let i = 0; i < opKeys.length; i++) {
+			  let oper = this.operations[opKeys[i]];
+			  if (oper[3] == data[1]) {
+				if (oper[2] != null) {
+				  oper[2](data[2], data[3]);
+				}
+			  }
+			}
+		  } else if (this.remotes[data[4]] != null) {
+			this.remotes[data[4]](data[2], data[3]);
+		  }
+		  break;
+		case 1:
+		  // CONNECT
+		  this.debug("CONNECTED: ClientID: " + data[1]);
+		  this.clientID = data[1];
+		  this.serverID = data[2];
+		  this.secureID = data[1] + "-" + data[3];
+		  if (this.onopen != null) {
+			this.onopen();
+		  }
+		  // Reconnect Previous Events
+		  let opKeys = Object.keys(this.operations);
+		  for (let i = 0; i < opKeys.length; i++) {
+			let operation = {...this.operations[opKeys[i]]};
+			delete this.operations[opKeys[i]];
+			this.send(operation[0], operation[1], operation[2], parseInt(opKeys[i]));
+		  }
+		  break;
+		case 0:
+		  // ERROR
+		  this.debug(data[2], true, true);
+		  if (this.operations[data[1]] != null) {
+			delete this.operations[data[1]];
+		  }
+		  if (data[3] == true) {
+			this.expectClose = true;
+		  } else if (this.operations[data[3]] != null) {
+			this.operations[data[3]][3] = this.hash(data[4]);
+			this.operations[data[3]][1][0] = data[4];
+		  }
+	  }
+	}
+  
+	connectSocket() {
+	  let intervalConnect = () => {
+		this.debug("CONNECTING");
+  
+		let ending = "";
+		if (this.supportsETF == true) {
+		  ending = "?en=etf";
+		}
+		if (this.socket != null) {
+		  this.socket.close();
+		}
+		this.socket = new WebSocket(this.socketURL + ending); // + "&comp=t"
+		if (this.supportsETF == true) {
+		  this.socket.binaryType = "arraybuffer";
+		}
+		this.socket.onopen = () => {
+		  this.socket.onmessage = (message) => {
+			this.handleMessage(message.data);
+			if (this.intervalTryConnect != null) {
+			  clearInterval(this.intervalTryConnect);
+			  this.intervalTryConnect = null;
+			}
+		  }
+		  this.socket.onclose = () => {
+			this.closed();
+			if (this.expectClose != true) {
+			  this.connectSocket();
+			}
+		  }
+		  this.send(1, [this.id, this.token]);
+		}
+	  }
+	  clearInterval(this.intervalTryConnect);
+	  this.intervalTryConnect = setInterval(intervalConnect, 10000);
+	  intervalConnect();
+	}
+  
+	closed() {
+	  this.debug("CONNECTION LOST");
+	  this.clientID = null;
+	  this.serverID = null;
+	  this.secureID = null;
+	  if (this.onclose != null) {
+		this.onclose();
+	  }
+	}
+  
+	hash(text) {
+	  if (typeof text === "object") {
+		text = JSON.stringify(text);
+	  }
+	  let hash = 0;
+	  for (let i = 0; i < text.length; i++) {
+		let char = text.charCodeAt(i);
+		hash = ((hash << 5) - hash) + char;
+		hash = hash & hash;
+	  }
+	  return hash;
+	}
+  
+	setDefaultConfig(newSet) {
+	  this.debug("NEW CONFIG: Config: " + JSON.stringify(newSet));
+	  if (this.defaultConfig != null && this.operations[this.defaultConfig] != null) {
+		delete this.operations[this.defaultConfig];
+	  }
+	  this.defaultConfig = this.send(7, [newSet]);
+	}
+  
+	setDisconnectEvent(filter, data, config) {
+	  this.debug("Setting Disconnect Event: Filter: " + JSON.stringify(filter) + " | Data: " + JSON.stringify(data) + " | Config: " + JSON.stringify(config));
+	  let sendData = [filter, data];
+	  if (config != null) {
+		sendData[2] = config;
+	  }
+	  if (this.disconnectEvent != null && this.operations[this.disconnectEvent] != null) {
+		delete this.operations[this.disconnectEvent];
+		this.disconnectEvent = null;
+	  }
+	  if (filter != null) {
+		this.disconnectEvent = this.send(8, sendData);
+	  } else {
+		delete this.operations[this.send(8, [null])];
+	  }
+	}
+  
+	subscribe(filter, callback, config) {
+	  this.debug("SUBSCRIBING: Filter: " + JSON.stringify(filter));
+	  let sendData = [filter];
+	  if (config != null) {
+		sendData[1] = config;
+	  }
+	  if (callback.length < 2) {
+		if (config == null) {
+		  sendData[1] = true;
+		} else {
+		  sendData[2] = true;
+		}
+	  }
+	  let subID = this.send(2, sendData, callback);
+	  return {
+		id: subID,
+		edit: (newFilter) => {
+		  if (this.operations[subID] != null) {
+			this.debug("EDITING: Filter: " + JSON.stringify(newFilter));
+			this.operations[subID][1][0] = newFilter;
+			this.send(4, [subID, this.operations[subID][3], newFilter]);
+			this.operations[subID][3] = this.hash(newFilter);
+		  }
+		},
+		close: () => {
+		  if (this.operations[subID] != null) {
+			this.debug("CLOSING " + subID);
+			this.send(5, [this.operations[subID][3]]);
+			delete this.operations[subID];
+		  }
+		}
+	  }
+	}
+  
+	publish(filter, data, config) {
+	  this.debug("PUBLISHING: Filter: " + JSON.stringify(filter) + " | Data: " + JSON.stringify(data));
+	  let sendData = [filter, data];
+	  if (config != null) {
+		sendData[2] = config;
+	  }
+	  this.send(3, sendData);
+	}
+  
+	remote(secureID) {
+	  let splitID = secureID.split("-");
+	  this.debug("REMOTING: ClientID: " + splitID[0]);
+	  return {
+		clientID: splitID[0],
+		secureID: splitID[1],
+		subscribe: (funcName, filter, config) => {
+		  this.debug("REMOTLY SUBSCRIBING: Name: " + funcName);
+		  let sendData = [secureID, 2, funcName, filter];
+		  if (config != null) {
+			sendData[4] = config;
+		  }
+		  this.send(6, sendData);
+		},
+		closeSubscribe: (funcName) => {
+		  this.debug("REMOTLY UNSUBSCRIBING: Name: " + funcName);
+		  this.send(6, [secureID, 5, funcName]);
+		}
+	  }
+	}
+  }

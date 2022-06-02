@@ -15,7 +15,7 @@ import {
 import { AccountData, SignInAccountData } from "./clientusertypes";
 import { ClientUser } from "./clientuser";
 import { WebSocket } from "ws";
-import SimpleSocket from "./vendor/simplesocket";
+import SimpleSocket, { Subscription } from "./vendor/simplesocket";
 import { Group, RawGroup, RawGroupJoin } from "./group";
 import { RawGroupUser } from "./groupuser";
 import { RawUser } from "./usertypes";
@@ -26,7 +26,10 @@ const IMAGE_UPLOAD_URL = "https://api.photop.live:3000/ImageUpload";
 
 export class Network {
 	socket: WebSocket;
-	readonly simpleSocket = SimpleSocket;
+	readonly simpleSocket = new SimpleSocket({
+		project_id: "61b9724ea70f1912d5e0eb11",
+		project_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
+	});
 	//readonly newPosts: Record<string, boolean> = {};
 	readonly awaitingMessages: Record<
 		string,
@@ -52,10 +55,10 @@ export class Network {
 
 	fingerprint = "25010157537369604664110537365900144030"; // useless fingerprint lol
 
-	generalUpdateSub?: string;
-	groupInvitesSub?: string;
-	postUpdateSub?: string;
-	profileUpdate?: string;
+	generalUpdateSub?: Subscription;
+	groupInvitesSub?: Subscription;
+	postUpdateSub?: Subscription;
+	profileUpdate?: Subscription;
 
 	async post(
 		text: string,
@@ -162,7 +165,7 @@ export class Network {
 	async connectChat(postid: PostId) {
 		this.connectedPosts.add(postid);
 		if (this.postUpdateSub) {
-			this.simpleSocket.editSubscribe(this.postUpdateSub, {
+			this.postUpdateSub,({
 				Task: "PostUpdate",
 				_id: Array.from(this.connectedPosts),
 			});
@@ -172,7 +175,7 @@ export class Network {
 			Chats: RawChat[];
 			Users: RawUser[];
 		}>("ConnectLiveChat", {
-			SimpleSocketID: this.simpleSocket.SecureID,
+			SimpleSocketID: this.simpleSocket.secureId,
 			Amount: 25,
 			Posts: Array.from(this.connectedPosts),
 			ChatPosts: Array.from(this.connectedPosts),
@@ -339,7 +342,7 @@ export class Network {
 		}
 
 		if (this.generalUpdateSub) {
-			this.simpleSocket.editSubscribe(this.generalUpdateSub, {
+			this.generalUpdateSub.edit({
 				Task: "GeneralUpdate",
 				Location: "Home",
 				Groups: Object.keys(this.groups),
@@ -348,7 +351,7 @@ export class Network {
 		}
 
 		if (this.groupInvitesSub) {
-			this.simpleSocket.editSubscribe(this.groupInvitesSub, {
+			this.groupInvitesSub.edit({
 				Task: "NewGroupInvite",
 				UserID: this.userid,
 			});
@@ -357,7 +360,7 @@ export class Network {
 
 	onGroupsChanged() {
 		if (this.generalUpdateSub) {
-			this.simpleSocket.editSubscribe(this.generalUpdateSub, {
+			this.generalUpdateSub.edit({
 				Task: "GeneralUpdate",
 				Location: "Home",
 				Groups: Object.keys(this.groups),
@@ -390,7 +393,7 @@ export class Network {
 		await this.getPosts({ initial: true });
 
 		if (this.config?.disableGroups !== true) {
-			this.groupInvitesSub = this.simpleSocket.subscribeEvent(
+			this.groupInvitesSub = this.simpleSocket.subscribe(
 				{ Task: "NewGroupInvite", UserID: this.userid },
 				(Data: GroupInviteData) => {
 					this.onInvite(Data);
@@ -415,7 +418,7 @@ export class Network {
 
 		//this.profileUpdate = this.simpleSocket.subscribeEvent()
 
-		this.postUpdateSub = this.simpleSocket.subscribeEvent<
+		this.postUpdateSub = this.simpleSocket.subscribe<
 			| {
 					Type: "LikeCounter";
 					_id: string;
@@ -444,7 +447,7 @@ export class Network {
 			}
 		);
 
-		this.generalUpdateSub = this.simpleSocket.subscribeEvent<{
+		this.generalUpdateSub = this.simpleSocket.subscribe<{
 			Type: "NewPostAdded" | "JoinGroup" | "LeaveGroup";
 		}>(
 			{
@@ -535,12 +538,8 @@ export class Network {
 
 		this.socket = new WebSocket(SOCKET_URL);
 
-		const simpleSocketPromise = this.simpleSocket.connect({
-			project_id: "61b9724ea70f1912d5e0eb11",
-			client_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
-		});
-		this.simpleSocket.debug = this.config?.logSocketMessages ?? false;
-		this.simpleSocket.remoteFunctions.PostStream = (Body) => {
+		this.simpleSocket.showDebug = this.config?.logSocketMessages ?? false;
+		this.simpleSocket.remotes.PostStream = (Body) => {
 			if (Body.Type == "NewChat") {
 				const { Users, Chats } = Body as {
 					Chats: RawChat[];
@@ -613,11 +612,14 @@ export class Network {
 				}
 			}
 		};
-		this.socket.onopen = () => {
-			simpleSocketPromise.then(() => {
-				this._init(credentials);
-			});
-		};
+		let a = 0;
+		const ready = ()=>{
+			a++;
+			if (a===2)
+			this._init(credentials);
+		}
+		this.simpleSocket.socket.onopen = ready;
+		this.socket.onopen = ready;
 	}
 }
 

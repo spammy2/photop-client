@@ -55,7 +55,7 @@ export class Group implements BaseObject {
 		this.name = raw.Name;
 		this.icon = raw.Icon;
 		this.inviteType = GroupInviteType[raw.Invite];
-		this._network.simpleSocket.subscribeEvent<{
+		this._network.simpleSocket.subscribe<{
 			Type: "Delete" | "Refresh" | "MemberUpdate" | "NewPostAdded",
 			NewPostData: DocumentObject & {Timestamp: number, UserID: string},
 			Member: RawGroupUser,
