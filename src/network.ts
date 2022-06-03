@@ -175,7 +175,7 @@ export class Network {
 			Chats: RawChat[];
 			Users: RawUser[];
 		}>("ConnectLiveChat", {
-			SimpleSocketID: this.simpleSocket.secureId,
+			SimpleSocketID: this.simpleSocket.secureID,
 			Amount: 25,
 			Posts: Array.from(this.connectedPosts),
 			ChatPosts: Array.from(this.connectedPosts),

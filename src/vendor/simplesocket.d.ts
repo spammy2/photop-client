@@ -9,7 +9,7 @@ export default class SimpleSocket {
 	showDebug: boolean;
 	remotes: Record<string, (body: any)=>void>
 	subscribe<Response>(query: SubscriptionQuery, callback: (data: Response)=>void): Subscription<T>;
-	secureId: string;
+	secureID: string;
 }
 
 type SubscriptionQuery = {
