@@ -4,7 +4,7 @@ export default class SimpleSocket {
 	  this.id = init.project_id;
 	  this.token = init.project_token;
   
-	  this.socketURL = "wss://simplesocket.net:32560/socket/v2";
+	  this.socketURL = "wss://https://phosocket.exotek.co/:32560/socket/v2";
 	  this.supportsETF = init.useBinary || typeof(TextEncoder) != 'undefined';
 	  this.operations = {};
 	  this.totalMessages = 0;
