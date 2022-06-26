@@ -21,15 +21,12 @@ import { RawGroupUser } from "./groupuser";
 import { RawUser } from "./usertypes";
 import { User } from "./user";
 
-const SOCKET_URL = "wss://api.photop.live/Server1";
+const SOCKET_URL = "wss://phosocket.exotek.co/Server1";
 const IMAGE_UPLOAD_URL = "https://api.photop.live:3000/ImageUpload";
 
 export class Network {
 	socket: WebSocket;
-	readonly simpleSocket = new SimpleSocket({
-		project_id: "61b9724ea70f1912d5e0eb11",
-		project_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
-	});
+	readonly simpleSocket: SimpleSocket;
 	//readonly newPosts: Record<string, boolean> = {};
 	readonly awaitingMessages: Record<
 		string,
@@ -537,7 +534,10 @@ export class Network {
 		this.chatDelay = config?.chatDelay || 2000;
 
 		this.socket = new WebSocket(SOCKET_URL);
-
+		this.simpleSocket = new SimpleSocket({
+			project_id: "61b9724ea70f1912d5e0eb11",
+			project_token: "client_a05cd40e9f0d2b814249f06fbf97fe0f1d5",
+		});
 		this.simpleSocket.showDebug = this.config?.logSocketMessages ?? false;
 		this.simpleSocket.remotes.PostStream = (Body) => {
 			if (Body.Type == "NewChat") {
